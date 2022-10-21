@@ -1,0 +1,39 @@
+# clang-format configuration
+
+# created by hailiang
+
+# Base
+BasedOnStyle: LLVM
+
+# Indent
+UseTab: Never
+TabWidth: 4
+IndentWidth: 4
+ColumnLimit: 120
+AccessModifierOffset: -4
+ObjCBlockIndentWidth: 4
+IndentWrappedFunctionNames: true
+IndentCaseLabels: true
+
+# Line
+MaxEmptyLinesToKeep: 1
+SpaceBeforeAssignmentOperators: true
+SpacesInContainerLiterals: true
+KeepEmptyLinesAtTheStartOfBlocks: true
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowAllParametersOfDeclarationOnNextLine: true
+BreakConstructorInitializersBeforeComma: true
+
+# Space
+PointerAlignment: Right
+SpacesInSquareBrackets: false
+SpacesInParentheses: false
+SpaceAfterCStyleCast: true
+
+# Alignment
+ObjCSpaceAfterProperty: true
+AlignTrailingComments: true
+AlignOperands: true
+AlignConsecutiveDeclarations: None
+AlignConsecutiveAssignments: Consecutive
