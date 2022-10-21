@@ -1,0 +1,85 @@
+# KF-GINS configuration file
+
+# Windows下使用KF-GINS时，文件路径中不能有中文
+# When you run KF-GINS under Windows, there should be NO Chinese in the file path.
+
+# IMU和GNSS数据文件路径
+# imudata and gnssdata filepath
+imupath: "./dataset/Leador-A15.txt"
+gnsspath: "./dataset/GNSS-RTK.txt"
+
+# 输出文件夹路径
+# output folder path
+outputpath: "./dataset"
+
+# IMU文件列数 (只会用前7列IMU数据)
+# IMU data columns, only use the first seven columns
+imudatalen: 7
+# IMU原始数据频率
+# IMU datarate [Hz]
+imudatarate: 200
+
+# 处理时间段，结束时间设置为-1时则处理至IMU文件结束
+# processing interval[s]
+# process until the imufile end if set endtime to -1
+starttime: 456300
+endtime: -1
+
+# 初始状态
+# initial state
+# 初始位置, 纬度 经度 高程
+# initial position, latitude, longitude, altitude. [deg, deg, m]
+initpos: [ 30.4447873701, 114.4718632047, 20.899 ]
+
+# 初始速度, 北向速度, 东向速度, 垂向速度
+# initial velocity, speed in the directions of north, east and down. [m/s, m/s, m/s]
+initvel: [ 0.0, 0.0, 0.0 ]
+
+# 初始姿态, 欧拉角(ZYX旋转顺序), 横滚, 俯仰, 航向
+# initial attitude, euler angle(ZYX rotation), roll, pitch, yaw [deg, deg, deg]
+initatt: [ 0.85421502, -2.03480295, 185.70235133 ]
+
+# 初始IMU零偏和比例因子, IMU的三个轴(前、右、下)
+# initial IMU bias and scale error, three axes of the imu (forward, right and down)
+initgyrbias: [ 0, 0, 0 ]    # [deg/h]
+initaccbias: [ 0, 0, 0 ]    # [mGal]
+initgyrscale: [ 0, 0, 0 ]   # [ppm]
+initaccscale: [ 0, 0, 0 ]   # [ppm]
+
+# 初始状态标准差
+# initial state std
+# 初始位置标准差, 导航坐标系下 北向, 东向和垂向
+# initial position std, north, east and down in n-frame. [m, m, m]
+initposstd: [ 0.005, 0.004, 0.008 ]
+
+# 初始速度标准差, 导航坐标系下北向、东向和垂向速度
+# initial velocity std, north, east and down speed in n-frame. [m/s, m/s, m/s]
+initvelstd: [ 0.003, 0.004, 0.004 ]
+
+# 初始姿态标准差, 横滚、俯仰、航向角标准差
+# initial attitude std, roll, pitch and yaw std. [deg, deg, deg]
+initattstd: [ 0.003, 0.003, 0.023 ]
+
+# 初始IMU零偏和比例因子标准差, IMU的三个轴
+# initial IMU bias and scale error std, thrss axes of the imu
+# 如果不指定，默认按照IMU零偏和比例因子误差参数设定
+# default to the noise parameters of IMU bias and scale error.
+#initbgstd: [ 1, 1, 1 ]          # [deg/h]
+#initbastd: [ 50, 50, 50 ]       # [mGal]
+#initsgstd: [ 300, 300, 300 ]    # [ppm]
+#initsastd: [ 300, 300, 300 ]    # [ppm]
+
+# IMU噪声建模参数, IMU的三个轴
+# IMU noise parameters
+imunoise:
+  arw: [0.003, 0.003, 0.003]          # [deg/sqrt(hr)]
+  vrw: [0.03, 0.03, 0.03]          # [m/s/sqrt(hr)]
+  gbstd: [0.027, 0.027, 0.027]        # [deg/hr]
+  abstd: [15.0, 15.0, 15.0]     # [mGal]
+  gsstd: [300.0, 300.0, 300.0]  # [ppm]
+  asstd: [300.0, 300.0, 300.0]  # [ppm]
+  corrtime: 4.0                    # [hr]
+
+# 天线杆臂, IMU坐标系前右下方向
+# antenna lever, forward, right and down in the imu frame. [m]
+antlever:  [ 0.136, -0.301, -0.184 ]
