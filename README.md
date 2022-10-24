@@ -46,7 +46,7 @@ English version: “The authors would like to acknowledge the team of Prof. Xiao
 
 ### 1.1 Compilation environment
 
-KF-GINS is managed by CMake and can be complied on both Linux and Windows. We recommend you choose Linux environment first.
+KF-GINS is managed by CMake and can be complied on all of Linux, MacOS and Windows. We recommend you choose Linux environment first.
 
 The configuration file is used as a parameter to run KF-GINS after successfully compiling it. To debug the program, it is also required to add the configuration file as a parameter.
 
@@ -99,6 +99,34 @@ Open a PowerShell or CMD terminal in the project directory and run the test data
 .\bin\KF-GINS.exe .\dataset\kf-gins.yaml
 # The executable file may be generated in the '.\bin\Release' directory. Then the command is:
 # .\bin\Release\KF-GINS.exe .\dataset\kf-gins.yaml
+```
+
+### 1.5 Compile under MacOS
+
+xcode-select and cmake in MacOS.  You should install these tools following the commonds:
+
+```shell
+xcode-select --install
+brew install cmake
+```
+
+After preparing your own compilation environment, you can clone the repository locally and compile KF-GINS as follows:
+```shell
+# Clone the repository
+git clone https://github.com/i2Nav-WHU/KF-GINS.git ~/
+
+# Build KF-GINS
+cd ~/KF-GINS
+mkdir build && cd build
+
+cmake ../ -DCMAKE_BUILD_TYPE=Release 
+make -j8
+
+# Run demo dataset
+cd ~/KF-GINS
+./bin/KF-GINS ./dataset/kf-gins.yaml
+
+# Wait until the program finish
 ```
 
 ## 2 Use KF-GINS
