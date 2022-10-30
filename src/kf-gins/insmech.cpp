@@ -124,7 +124,7 @@ void INSMech::posUpdate(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const
     // recompute rmrn, wie_n, wen_n at k-1/2
     Eigen::Vector2d rmrn;
     Eigen::Vector3d wie_n, wen_n;
-    rmrn = Earth::meridianPrimeVerticalRadius(pvapre.pos(0));
+    rmrn = Earth::meridianPrimeVerticalRadius(midpos[0]);
     wie_n << WGS84_WIE * cos(midpos[0]), 0, -WGS84_WIE * sin(midpos[0]);
     wen_n << midvel[1] / (rmrn[1] + midpos[2]), -midvel[0] / (rmrn[0] + midpos[2]),
         -midvel[1] * tan(midpos[0]) / (rmrn[1] + midpos[2]);
