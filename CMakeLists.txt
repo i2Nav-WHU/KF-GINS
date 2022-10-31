@@ -27,12 +27,13 @@ add_executable(${PROJECT_NAME} ${SOURCE})
 # Eigen3
 include_directories(ThirdParty/eigen-3.3.9)
 
-# yaml-cpp
-add_subdirectory(ThirdParty/yaml-cpp ThirdParty/yaml-cpp)
+# yaml-cpp-0.7.0
+add_subdirectory(ThirdParty/yaml-cpp-0.7.0)
 target_link_libraries(${PROJECT_NAME} yaml-cpp)
 
 # abseil
-add_subdirectory(ThirdParty/abseil-cpp ThirdParty/abseil-cpp)
+set(ABSL_PROPAGATE_CXX_STD true)
+add_subdirectory(ThirdParty/abseil-cpp-20220623.1)
 target_link_libraries(${PROJECT_NAME}
         absl::strings
         absl::str_format
