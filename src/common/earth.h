@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef EARTH_H
-#define EARTH_H
+#pragma once
 
 #include "types.h"
 
@@ -264,4 +263,3 @@ public:
     }
 };
 
-#endif // EARTH_H

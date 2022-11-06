@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef ROTATION_H
-#define ROTATION_H
+#pragma once
 
 #include <Eigen/Geometry>
 
@@ -117,5 +116,3 @@ public:
         return ans;
     }
 };
-
-#endif // ROTATION_H

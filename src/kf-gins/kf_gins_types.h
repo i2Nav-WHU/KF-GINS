@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef KF_GINS_TYPES_H
-#define KF_GINS_TYPES_H
+#pragma once
 
 #include <Eigen/Dense>
 #include <iomanip>
@@ -137,4 +136,3 @@ typedef struct GINSOptions {
 
 } GINSOptions;
 
-#endif // KF_GINS_TYPES_H

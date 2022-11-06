@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef FILESAVER_H
-#define FILESAVER_H
+#pragma once
 
 #include <fstream>
 #include <string>
@@ -46,4 +45,3 @@ private:
     void dump_(const vector<double> &data);
 };
 
-#endif // FILESAVER_H

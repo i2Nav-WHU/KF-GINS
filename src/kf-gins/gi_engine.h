@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef GI_ENGINE_H
-#define GI_ENGINE_H
+#pragma once
 
 #include <Eigen/Dense>
 #include <vector>
@@ -261,4 +260,3 @@ private:
     enum NoiseID { VRW_ID = 0, ARW_ID = 3, BGSTD_ID = 6, BASTD_ID = 9, SGSTD_ID = 12, SASTD_ID = 15 };
 };
 
-#endif // GI_ENGINE_H

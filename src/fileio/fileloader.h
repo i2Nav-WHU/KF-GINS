@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef FILELOADER_H
-#define FILELOADER_H
+#pragma once
 
 #include "filebase.h"
 
@@ -45,4 +44,3 @@ private:
     bool load_();
 };
 
-#endif // FILELOADER_H

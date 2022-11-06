@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef IMUFILELOADER_H
-#define IMUFILELOADER_H
+#pragma once
 
 #include "common/types.h"
 #include "fileloader.h"
@@ -102,4 +101,3 @@ private:
     vector<double> data_;
 };
 
-#endif // IMUFILELOADER_H

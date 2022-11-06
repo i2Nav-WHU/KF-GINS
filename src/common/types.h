@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef TYPES_H
-#define TYPES_H
+#pragma once
 
 #include <Eigen/Geometry>
 
@@ -53,4 +52,3 @@ typedef struct Pose {
     Vector3d t;
 } Pose;
 
-#endif // TYPES_H

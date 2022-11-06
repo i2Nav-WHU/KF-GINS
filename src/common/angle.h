@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef ANGLE_H
-#define ANGLE_H
+#pragma once
 
 const double D2R = (M_PI / 180.0);
 const double R2D = (180.0 / M_PI);
@@ -56,4 +55,3 @@ public:
     }
 };
 
-#endif // ANGLE_H

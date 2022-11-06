@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef FILEBASE_H
-#define FILEBASE_H
+#pragma once
 
 #include <fstream>
 #include <vector>
@@ -68,4 +67,3 @@ protected:
     int columns_ = 0;
 };
 
-#endif // FILEBASE_H

@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef INSMECH_H
-#define INSMECH_H
+#pragma once
 
 #include "common/types.h"
 
@@ -61,4 +60,3 @@ private:
     static void attUpdate(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const IMU &imucur);
 };
 
-#endif // INSMECH_H

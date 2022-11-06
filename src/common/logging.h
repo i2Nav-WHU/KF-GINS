@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LOGGING_H
-#define LOGGING_H
+#pragma once
 
 #include <Eigen/Geometry>
 #include <absl/strings/str_format.h>
@@ -82,4 +81,3 @@ public:
     }
 };
 
-#endif // LOGGING_H
