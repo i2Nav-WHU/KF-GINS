@@ -46,7 +46,7 @@ English version: “The authors would like to acknowledge the team of Prof. Xiao
 
 ### 1.1 Compilation environment
 
-KF-GINS is managed by CMake and can be complied on all of Linux, MacOS and Windows. We recommend you choose Linux environment first.
+KF-GINS is managed by CMake and can be compiled on all of Linux, MacOS and Windows. We recommend you choose Linux environment first.
 
 The configuration file is used as a parameter to run KF-GINS after successfully compiling it. To debug the program, it is also required to add the configuration file as a parameter.
 
@@ -55,7 +55,7 @@ KF-GINS requires another three libraries, which are Eigen3, abseil-cpp, and yaml
 
 ### 1.3 Compile under Linux
 
-We recommend you use g++ complier of Ubuntu18.04 or Ubuntu20.04 to compile KF-GINS. You should install the build-essential libraries following the commonds:
+We recommend you use g++ compiler of Ubuntu18.04 or Ubuntu20.04 to compile KF-GINS. You should install the build-essential libraries following the commonds:
 ```shell
 sudo apt-get install cmake
 sudo apt-get install build-essential
@@ -89,7 +89,7 @@ You should first install the MSVC compiler and VScode software (including the ne
 
 After preparing your own compilation environment, you can clone the repository locally and open the KF-GINS folder in VSCode:
 
-- Set complier: open the Command Palette (Ctrl+Shift+P) and type "CMake: Select a Kit", select the MSVC compilier
+- Set compiler: open the Command Palette (Ctrl+Shift+P) and type "CMake: Select a Kit", select the MSVC compilier
 - Set compile parameter: type "CMake: Select Variant" in the Command Palette, select "Release"
 - Configure CMake: type "CMake: Configure" in the Command Palette
 - Compile Project: type "CMake: Build" in the Command Palette
@@ -128,6 +128,21 @@ cd ~/KF-GINS
 
 # Wait until the program finish
 ```
+
+### 1.6 Debug by VSCode
+
+GDB debugging tool is required to debug KF-GINS under Linux. You should install it following the command.
+``` shell
+sudo apt-get install gdb
+```
+The debug operation is as follows:
+
+- Set compiler: open the Command Palette (Ctrl+Shift+P) and type "CMake: Select a Kit", select GCC for Linux or select the MSVC compilier for Windows
+- Set compile parameter: type "CMake: Select Variant" in the Command Palette, select **Debug**
+- Configure CMake: type "CMake: Configure" in the Command Palette, Compile Project: type "CMake: Build" in the Command Palette
+- Set debug startup option: click the fourth button on the left side of VSCode to open the "Run and Debug" menu (or the shortcut key Ctrl+Shift+D), and select "Windows 启动" or "Linux gdb 启动" at the top of this menu window.
+- Start debugging, click the green triangle symbol at the top of the left window (or the shortcut key F5) to start debugging.
+
 
 ## 2 Use KF-GINS
 
