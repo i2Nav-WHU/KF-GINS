@@ -24,6 +24,7 @@
 #define ROTATION_H
 
 #include <Eigen/Geometry>
+#include <iostream>
 
 using Eigen::Matrix3d;
 using Eigen::Quaterniond;
@@ -47,11 +48,13 @@ public:
         euler[1] = atan(-dcm(2, 0) / sqrt(dcm(2, 1) * dcm(2, 1) + dcm(2, 2) * dcm(2, 2)));
 
         if (dcm(2, 0) <= -0.999) {
-            euler[0] = atan2(dcm(2, 1), dcm(2, 2));
+            euler[0] = 0;
             euler[2] = atan2((dcm(1, 2) - dcm(0, 1)), (dcm(0, 2) + dcm(1, 1)));
+            std::cout << "[WARNING] Rotation::matrix2euler: Singular Euler Angle! Set the roll angle to 0!" << std::endl;
         } else if (dcm(2, 0) >= 0.999) {
-            euler[0] = atan2(dcm(2, 1), dcm(2, 2));
+            euler[0] = 0;
             euler[2] = M_PI + atan2((dcm(1, 2) + dcm(0, 1)), (dcm(0, 2) - dcm(1, 1)));
+            std::cout << "[WARNING] Rotation::matrix2euler: Singular Euler Angle! Set the roll angle to 0!" << std::endl;
         } else {
             euler[0] = atan2(dcm(2, 1), dcm(2, 2));
             euler[2] = atan2(dcm(1, 0), dcm(0, 0));
