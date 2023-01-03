@@ -121,7 +121,7 @@ public:
         return {-2 * atan(qne.y() / qne.w()) - M_PI * 0.5, 2 * atan2(qne.z(), qne.w()), height};
     }
 
-    /* 地理坐标(纬度、经度和高程)转地心地固坐标 */
+    /* 大地坐标(纬度、经度和高程)转地心地固坐标 */
     static Vector3d blh2ecef(const Vector3d &blh) {
         double coslat, sinlat, coslon, sinlon;
         double rnh, rn;
@@ -137,7 +137,7 @@ public:
         return {rnh * coslat * coslon, rnh * coslat * sinlon, (rnh - rn * WGS84_E1) * sinlat};
     }
 
-    /* 地心地固坐标转地理坐标 */
+    /* 地心地固坐标转大地坐标 */
     static Vector3d ecef2blh(const Vector3d &ecef) {
         double p = sqrt(ecef[0] * ecef[0] + ecef[1] * ecef[1]);
         double rn;
@@ -145,7 +145,7 @@ public:
         double h = 0, h2;
 
         // 初始状态
-        lat = atan(ecef[2] / (p * 1.0 - WGS84_E1));
+        lat = atan(ecef[2] / (p * (1.0 - WGS84_E1)));
         lon = 2.0 * atan2(ecef[1], ecef[0] + p);
 
         do {
@@ -158,7 +158,7 @@ public:
         return {lat, lon, h};
     }
 
-    /* n系相对位置转地理坐标相对位置 */
+    /* n系相对位置转大地坐标相对位置 */
     static Matrix3d DRi(const Vector3d &blh) {
         Matrix3d dri = Matrix3d::Zero();
 
@@ -170,7 +170,7 @@ public:
         return dri;
     }
 
-    /* 地理坐标相对位置转n系相对位置 */
+    /* 大地坐标相对位置转n系相对位置 */
     static Matrix3d DR(const Vector3d &blh) {
         Matrix3d dr = Matrix3d::Zero();
 
@@ -182,7 +182,7 @@ public:
         return dr;
     }
 
-    /* 局部坐标(在origin处展开)转地理坐标 */
+    /* 局部坐标(在origin处展开)转大地坐标 */
     static Vector3d local2global(const Vector3d &origin, const Vector3d &local) {
 
         Vector3d ecef0 = blh2ecef(origin);
@@ -194,7 +194,7 @@ public:
         return blh1;
     }
 
-    /* 地理坐标转局部坐标(在origin处展开) */
+    /* 大地坐标转局部坐标(在origin处展开) */
     static Vector3d global2local(const Vector3d &origin, const Vector3d &global) {
         Vector3d ecef0 = blh2ecef(origin);
         Matrix3d cn0e  = cne(origin);
