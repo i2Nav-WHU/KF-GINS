@@ -154,13 +154,13 @@ void GIEngine::newImuProcess() {
 
 void GIEngine::imuCompensate(IMU &imu) {
 
-    // 补偿IMU零偏误差
-    // compensate the imu bias error
+    // 补偿IMU零偏
+    // compensate the imu bias
     imu.dtheta -= imuerror_.gyrbias * imu.dt;
     imu.dvel -= imuerror_.accbias * imu.dt;
 
-    // 补偿IMU比例因子误差
-    // compensate the imu scale error
+    // 补偿IMU比例因子
+    // compensate the imu scale
     Eigen::Vector3d gyrscale, accscale;
     gyrscale   = Eigen::Vector3d::Ones() + imuerror_.gyrscale;
     accscale   = Eigen::Vector3d::Ones() + imuerror_.accscale;
