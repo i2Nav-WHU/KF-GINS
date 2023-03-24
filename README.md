@@ -196,7 +196,7 @@ For more details on the algorithm, please refer to [惯性导航原理与GNSS/IN
 | 6~8     | 3-D velocity (north-east-down)  | $m/s$ |
 | 9~11    | attitude angles (roll-pitch-yaw) | $deg$ |
 
-- The IMU error binary file format(all double data) is defined as:
+- The IMU error text file format(all double data) is defined as:
 
 | Columns | Data description                        | Units   |
 | ------- |-----------------------------------------| ------- |
@@ -206,7 +206,7 @@ For more details on the algorithm, please refer to [惯性导航原理与GNSS/IN
 | 8~10    | X-Y-Z axes gyroscope scale factors      | $ppm$   |
 | 11~13   | X-Y-Z axes accelerometer scale factors  | $ppm$   |f
 
-- The state STD binary file format(all double data) is defined as:
+- The state STD text file format(all double data) is defined as:
 
 | Columns | Data description                          | Units  |
 | ------- |-------------------------------------------|--------|
