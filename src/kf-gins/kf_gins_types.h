@@ -121,7 +121,7 @@ typedef struct GINSOptions {
         // 打印IMU噪声参数
         // print IMU noise parameters
         std::cout << " - IMU noise: " << std::endl;
-        std::cout << '\t' << "- arw: " << imunoise.gyr_arw.transpose() * R2D * 60 << " [deg/s/sqrt(h)] " << std::endl;
+        std::cout << '\t' << "- arw: " << imunoise.gyr_arw.transpose() * R2D * 60 << " [deg/sqrt(h)] " << std::endl;
         std::cout << '\t' << "- vrw: " << imunoise.acc_vrw.transpose() * 60 << " [m/s/sqrt(h)] " << std::endl;
         std::cout << '\t' << "- gyrbias  std: " << imunoise.gyrbias_std.transpose() * R2D * 3600 << " [deg/h] "
                   << std::endl;
