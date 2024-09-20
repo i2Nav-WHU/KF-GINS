@@ -38,6 +38,18 @@
                     "ignoreFailures": true
                 }
             ]
+        },
+        {
+            "name": "Mac lldb 启动",
+            "type": "cppdbg",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/bin/KF-GINS",
+            "args": ["./dataset/kf-gins.yaml"],
+            "stopAtEntry": true,
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
         }
     ]
 }
