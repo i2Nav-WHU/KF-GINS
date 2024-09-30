@@ -137,10 +137,10 @@ sudo apt-get install gdb
 ```
 The debug operation is as follows:
 
-- Set compiler: open the Command Palette (Ctrl+Shift+P) and type "CMake: Select a Kit", select GCC for Linux or select the MSVC compilier for Windows
+- Set compiler: open the Command Palette (Ctrl+Shift+P) and type "CMake: Select a Kit", select GCC for Linux, select "clang 15.0.0 arm64-apple-darwin23.5.0"(or above) for MacOS with M-series Chip or select the MSVC compilier for Windows
 - Set compile parameter: type "CMake: Select Variant" in the Command Palette, select **Debug**
 - Configure CMake: type "CMake: Configure" in the Command Palette, Compile Project: type "CMake: Build" in the Command Palette
-- Set debug startup option: click the fourth button on the left side of VSCode to open the "Run and Debug" menu (or the shortcut key Ctrl+Shift+D), and select "Windows 启动" or "Linux gdb 启动" at the top of this menu window.
+- Set debug startup option: click the fourth button on the left side of VSCode to open the "Run and Debug" menu (or the shortcut key Ctrl+Shift+D), and select "Windows 启动", "Linux gdb 启动" or "Mac lldb 启动" at the top of this menu window.
 - Start debugging, click the green triangle symbol at the top of the left window (or the shortcut key F5) to start debugging.
 
 

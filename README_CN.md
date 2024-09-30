@@ -137,10 +137,10 @@ sudo apt-get install gdb
 
 调试操作如下：
 
-- 选择编译器，打开命令面板(Ctrl+Shift+P)输入"CMake: Select a Kit"，Linux选择gcc编辑器，Windows选择MSVC编译器
+- 选择编译器，打开命令面板(Ctrl+Shift+P)输入"CMake: Select a Kit"，Linux选择gcc编辑器，Windows选择MSVC编译器, MacOS M系列芯片选择”clang 15.0.0 arm64-apple-darwin23.5.0“或更高版本
 - 设置编译参数，命令面板输入"CMake: Select Variant"，选择 **Debug**
 - 配置CMake，命令面板输入"CMake: Configure"，编译工程，命令面板输入"CMake: Build"
-- 选择调试启动选项，点击VSCode左侧第四个按钮打开“运行和调试”菜单(或快捷键Ctrl+Shift+D)，左侧窗口上方选择“Windows 启动” 或 “Linux gdb 启动”
+- 选择调试启动选项，点击VSCode左侧第四个按钮打开“运行和调试”菜单(或快捷键Ctrl+Shift+D)，左侧窗口上方选择“Windows 启动”, “Linux gdb 启动” 或 ”Mac lldb 启动“
 - 开始调试，点击左侧窗口上方的 绿色三角符号 开始调试(或快捷键F5调试)
 
 ## 2 KF-GINS使用
