@@ -113,7 +113,7 @@ public:
         quat.y() = sinlat * coslon;
         quat.z() = coslat * sinlon;
 
-        return quat;
+        return quat.normalized();
     }
 
     /* 从n系到e系转换四元数得到纬度和经度 */

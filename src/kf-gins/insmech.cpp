@@ -83,7 +83,7 @@ void INSMech::velUpdate(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const
     temp2 << 0, 0, -WGS84_WIE * imucur.dt / 2;
     qee = Rotation::rotvec2quaternion(temp2);
     qne = Earth::qne(pvapre.pos);
-    qne = qee * qne * qnn;
+    qne = (qee * qne * qnn).normalized();
     midpos[2] = pvapre.pos[2] - midvel[2] * imucur.dt / 2;
     midpos    = Earth::blh(qne, midpos[2]);
 
@@ -141,7 +141,7 @@ void INSMech::posUpdate(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const
     // 位置更新完成
     // position update finish
     qne           = Earth::qne(pvapre.pos);
-    qne           = qee * qne * qnn;
+    qne           = (qee * qne * qnn).normalized();
     pvacur.pos[2] = pvapre.pos[2] - midvel[2] * imucur.dt;
     pvacur.pos    = Earth::blh(qne, pvacur.pos[2]);
 }
@@ -156,8 +156,8 @@ void INSMech::attUpdate(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const
     midvel = (pvapre.vel + pvacur.vel) / 2;
     qne_pre   = Earth::qne(pvapre.pos);
     qne_cur   = Earth::qne(pvacur.pos);
-    temp1     = Rotation::quaternion2vector(qne_cur.inverse() * qne_pre);
-    qne_mid   = qne_pre * Rotation::rotvec2quaternion(temp1 / 2).inverse();
+    temp1     = Rotation::quaternion2vector((qne_cur.inverse() * qne_pre).normalized());
+    qne_mid   = (qne_pre * Rotation::rotvec2quaternion(temp1 / 2).inverse()).normalized();
     midpos[2] = (pvacur.pos[2] + pvapre.pos[2]) / 2;
     midpos    = Earth::blh(qne_mid, midpos[2]);
 
@@ -183,7 +183,7 @@ void INSMech::attUpdate(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const
 
     // 姿态更新完成
     // attitude update finish
-    pvacur.att.qbn   = qnn * pvapre.att.qbn * qbb;
+    pvacur.att.qbn   = (qnn * pvapre.att.qbn * qbb).normalized();
     pvacur.att.cbn   = Rotation::quaternion2matrix(pvacur.att.qbn);
     pvacur.att.euler = Rotation::matrix2euler(pvacur.att.cbn);
 }
