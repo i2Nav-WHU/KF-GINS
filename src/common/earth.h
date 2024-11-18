@@ -3,8 +3,8 @@
  *
  * Copyright (C) 2022 i2Nav Group, Wuhan University
  *
- *     Author : Hailiang Tang
- *    Contact : thl@whu.edu.cn
+ *     Author : Hailiang Tang, Liqiang Wang
+ *    Contact : thl@whu.edu.cn, wlq@whu.edu.cn
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,14 +44,23 @@ const double WGS84_E2  = 0.0067394967422764341; /* 第二偏心率平方 */
 class Earth {
 
 public:
-    /* 正常重力计算 */
+    /* 正常重力计算
+    Refer to equations (4.78a) and (4.79) on page 110 of "Geodesy" by Torge W. and Müller J. (de Gruyter, 2012).
+    */
     static double gravity(const Vector3d &blh) {
+        double sinphi = sin(blh[0]);
+        double sin2   = sinphi * sinphi;
+        double sin4   = sin2 * sin2;
 
-        double sin2 = sin(blh[0]);
-        sin2 *= sin2;
+        // normal gravity at equator, 赤道处正常重力
+        double gamma_a = 9.7803267715;
+        // series expansion of normal gravity at given latitude, 给定纬度处正常重力的级数展开
+        double gamma_0 = gamma_a * (1 + 0.0052790414 * sin2 + 0.0000232718 * sin4 + 0.0000001262 * sin2 * sin4 +
+                                    0.0000000007 * sin4 * sin4);
+        // changes of normal gravity with height, 正常重力随高度变化
+        double gamma = gamma_0 - (3.0877e-6 - 4.3e-9 * sin2) * blh[2] + 0.72e-12 * blh[2] * blh[2];
 
-        return 9.7803267715 * (1 + 0.0052790414 * sin2 + 0.0000232718 * sin2 * sin2) +
-               blh[2] * (0.0000000043977311 * sin2 - 0.0000030876910891) + 0.0000000000007211 * blh[2] * blh[2];
+        return gamma;
     }
 
     /* 计算子午圈半径和卯酉圈半径 */
