@@ -1,0 +1,696 @@
+\documentclass{article}
+
+% 编译中文
+% \usepackage{ctex}
+
+% 包含所终数学公式和矩阵的基本编排
+\usepackage{amsmath}
+% 更美观的表格线 
+\usepackage{booktabs} 
+\usepackage{hyphenat} % 会在合适的位置对长单词进行断行处理
+\usepackage{array}
+\usepackage{color}
+\usepackage[colorlinks, linkcolor=blue,anchorcolor=red,citecolor=red]
+{hyperref}	% 交叉引用超链接
+
+\usepackage{geometry} 
+\geometry{a4paper}
+\geometry{top=2.5cm, bottom=2.5cm, left=2cm, right=2cm}
+
+% 修改表格标题为英文
+\renewcommand{\tablename}{Table}
+
+% something NOT relevant to the usage of the package.
+% \usepackage{url,textcomp}
+\setlength{\parindent}{10pt}
+\setlength{\parskip}{2pt}
+\title{\texttt{KF-GINS Algorithm Documentation}}
+\author{Liqiang Wang, \texttt{wlq@whu.edu.cn}}
+% //////////////////////////////////////////////////
+
+
+\begin{document}
+
+\maketitle
+
+
+\section{Parameter Definitions in KF-GINS}
+
+\subsection{Coordinate System Definitions}
+
+The coordinate system definitions used in KF-GINS are shown in Table \ref{tab:coordinate-definition}.
+
+\begin{table}[htbp]
+	\centering
+    \small
+    \caption{Coordinate System Definitions}
+    \label{tab:coordinate-definition}
+	\begin{tabular}{m{1.2cm}<{\centering} m{2.8cm}<{\centering} m{3.5cm}<{\centering} m{6.8cm}<{\centering}}
+		\toprule
+		Symbol & Definition & Origin & Axis (X-Y-Z)\\
+		\midrule
+        $\mathrm{n}$-frame & Navigation Frame & IMU Geometric Center & North-East-Down \\
+        $\mathrm{b}$-frame & IMU/Body Frame & IMU Geometric Center & Forward-Right-Down \\
+        $\mathrm{i}$-frame & Inertial Frame (Earth-Centered) & Earth's Center & X points to the vernal equinox, Z points to the North Pole, XYZ follows the right-hand rule \\
+        $\mathrm{e}$-frame & Earth-Centered Earth-Fixed Frame & Earth's Center & X points to the Prime Meridian, Y points to 90°E, Z points to the North Pole \\
+        \bottomrule
+	\end{tabular}
+\end{table}
+
+
+\subsection{Symbol Specification}
+
+\textbf{(1) Symbol Font Definition}
+
+The symbol font definition specifications used in the document are shown in Table \ref{tab:symbol-font-definition}.
+\begin{table}[htbp]
+    \centering
+    \caption{Symbol Font Definitions}
+    \label{tab:symbol-font-definition}
+    \begin{tabular}{c c c}
+        \toprule
+        Symbol & Font & Example\\
+        \midrule
+        Scalar & Italic, Non-Bold & $g$\\
+        Constant Scalar & Upright, Non-Bold & $\text{VRW}$\\
+        Coordinate System & Upright, Non-Bold & $\mathrm{n}$-frame \\
+        Vector & Italic, Bold & $\boldsymbol{v}_{\mathrm{b}}^{\mathrm{n}}$ \\
+        General Matrix & Italic, Bold & $\boldsymbol{P}$ \\
+        Rotation Matrix & Upright, Bold & $\mathbf{C}_{\mathrm{b}}^{\mathrm{n}}$ \\
+        Quaternion & Upright, Bold & $\mathbf{q}_{\mathrm{b}}^{\mathrm{n}}$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{(2) Subscript and Superscript Definition}
+
+Subscripts and superscripts for vectors and matrices are placed on the right side of the symbol. The conventions for subscripts and superscripts are as follows:
+
+For a vector $\boldsymbol{v}_{\mathrm{r}\mathrm{b}}^{\mathrm{p}}$, the first subscript $\mathrm{r}$ represents the reference position (reference frame), the second subscript $\mathrm{b}$ represents the body position (body frame), and the superscript $\mathrm{p}$ represents the projection frame. Thus, $\boldsymbol{v}_{\mathrm{r}\mathrm{b}}^{\mathrm{p}}$ represents the vector from the reference position (origin of the reference frame) to the body position (origin of the body frame), expressed in the projection frame.
+
+If the vector symbol $\boldsymbol{v}_{\mathrm{b}}^{\mathrm{p}}$ has only one subscript, it is assumed that the projection frame are the reference frame. This represents the position of the $\mathrm{b}$ frame's origin relative to the $\mathrm{p}$ frame's origin, projected into the $\mathrm{p}$ frame. Additional parameters in the subscript, such as those after a comma or within parentheses, typically indicate time, e.g., $k$ in $\mathbf{q}_{\mathrm{n}(k)}^{\mathrm{e}(k)}$ and $\Delta \boldsymbol{v}_{\mathrm{f},k}^{\mathrm{b}}$ represent the time step. For IMU measurement errors, the subscript indicates the property, e.g., $g$ and $a$ in $\boldsymbol{b}_{g}$ and $\boldsymbol{b}_{a}$ represent gyroscope and accelerometer, respectively.
+
+Specifically, the IMU's velocity and position with respected to the earth projected in the navigation frame, $\boldsymbol{v}_{\mathrm{e}\mathrm{b}}^{\mathrm{n}}$ and $\boldsymbol{r}_{\mathrm{e}\mathrm{b}}^{\mathrm{n}}$, are simplified as $\boldsymbol{v}^{\mathrm{n}}$ and $\boldsymbol{r}^{\mathrm{n}}$ for convenience.
+
+When the rotation matrix $\mathbf{C}_{\mathrm{b}}^{\mathrm{n}}$ is used for coordinate transformations, its subscript $\mathrm{b}$ indicates the source coordinate system and the superscript $\mathrm{n}$ indicates the target coordinate system. Left-multiplying a vector by the rotation matrix transforms it between the source and target coordinate systems, e.g., $\boldsymbol{v}_{\mathrm{r}\mathrm{b}}^{\mathrm{n}} = \mathbf{C}_{\mathrm{b}}^{\mathrm{n}} \boldsymbol{v}_{\mathrm{r}\mathrm{b}}^{\mathrm{b}}$.
+
+When representing attitude, the rotation matrix $\mathbf{C}_{\mathrm{b}}^{\mathrm{n}}$ and the quaternion $\mathbf{q}_{\mathrm{b}}^{\mathrm{n}}$ indicate the attitude of the body frame $\mathrm{b}$-frame relative to the reference frame $\mathrm{n}$-frame.
+
+
+\subsection{Attitude Representation}
+
+Four methods, including euler angles, rotation matrices, quaternions, and rotation vectors, are employed in KF-GINS for attitude representation.
+
+The rotation sequence for Euler angles is defined as 'ZYX', corresponding to yaw angle $\psi$, pitch angle $\theta$, and roll angle $\phi$. Euler angles are used only for parameter input and result output.
+
+The rotation matrix $\mathbf{C}_{\mathrm{b}}^{\mathrm{n}}$ and the quaternion $\mathbf{q}_{\mathrm{b}}^{\mathrm{n}}$ are commonly used in the algorithm. The rotation matrix is primarily used for coordinate transformations, while the quaternion is used for attitude and position updates.
+
+The equivalent rotation vector $\boldsymbol{\phi}$ is a non-singular minimal representation of attitude parameters, widely used in inertial navigation algorithms and attitude error representation.
+
+\subsection{Geographical Parameters}
+
+The WGS84 ellipsoid model is employed in KF-GINS. Table \ref{tab:wgs84-parameters} lists the relevant geographical parameters.
+\begin{table}[htbp]
+    \centering
+    \caption{WGS84 Ellipsoid Model Parameters}
+    \label{tab:wgs84-parameters}
+    \begin{tabular}{c c c}
+        \toprule
+        Parameter & Symbol & Value \\
+        \midrule
+        Semi-major axis & $\text{a}$ & 6378137 m \\
+        Semi-minor axis & $\text{b}$ & 6356752.3142 m \\
+        Flattening & $\text{f}$ & 1/298.257223563 \\
+        First eccentricity & $\text{e}$ & 0.081819190842621 \\
+        Second eccentricity & $\mathrm{e}^{'}$ &  0.082094437949696 \\
+        Earth's gravitational constant & $\text{GM}$ & 3.986004418$\times 10^{14}$ m \\
+        Earth's angular velocity & $\omega_{e}$ & 7.292115 $\times 10^{-5}$ rad/s \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+
+The IMU's position and velocity in the $\mathrm{n}$-frame are needed to compute the geographical parameters. The components of the IMU's position and velocity are expressed as:
+\begin{equation}
+    \begin{aligned}
+        \boldsymbol{p} =& \left[\begin{matrix} \varphi & \lambda & h \end{matrix}\right]^T \\
+        \boldsymbol{v}^{\mathrm{n}} =& \left[\begin{matrix} v_{N} & v_{E} & v_{D}\end{matrix}\right]^T
+    \end{aligned}
+\end{equation}
+where, $\varphi$, $\lambda$, and $h$ represent latitude, longitude, and altitude, respectively, and $v_{N}$, $v_{E}$, and $v_{D}$ represent the northward, eastward, and downward components of ground velocity in the $\mathrm{n}$-frame.
+
+Using the above geographical parameters, the local gravity acceleration $\boldsymbol{g}_{p}^{\mathrm{n}}$, the meridian radius $R_{M}$, and the prime vertical radius $R_{N}$ can be calculated. The formula for local gravity acceleration is:
+\begin{equation}
+    \begin{aligned}
+        g(h,\varphi) =& g(\varphi) -\left(3.0877 \times 10^{-6} - 4.3\times10^{-9} \sin^{2}\varphi \right) h + 0.72\times 10^{-12} h^{2} \\
+        g(\varphi) =& \gamma_{a} \left( \begin{matrix}1 + 0.0052790414 \sin^{2}\varphi + 0.0000232718 \sin^{4}\varphi \\ + 0.0000001262 \sin^{6}\varphi + 0.0000000007 \sin^{8} \varphi \end{matrix} \right)
+    \end{aligned}
+\end{equation}
+where $\gamma_{a}=9.7803267715 \, \text{m/s}^2$ is the normal gravity at the equator, $g(\varphi)$ is the normal gravity at the ellipsoid surface ($h=0$), and $g(h,\varphi)$ is the normal gravity at the corresponding latitude and altitude. The unit of $g(h,\varphi)$ is $\text{m/s}^2$, $\varphi$ is in radians, and $h$ is in meters.
+
+The gravity acceleration vector on the ellipsoid surface $\boldsymbol{g}_{p}^{\mathrm{n}}$ is expressed as:
+\begin{equation}
+    \boldsymbol{g}_{p}^{\mathrm{n}} = \left[ \begin{matrix} 0 & 0 & g(h,\varphi) \end{matrix}  \right]^{T}.
+    \label{eq:local-gravity-in-n-frame}
+\end{equation}
+
+The formulas for the meridian radius $R_{M}$ and the prime vertical radius $R_{N}$ are:
+\begin{equation}
+    \begin{aligned}
+        {R}_{M}\left( \varphi \right) =& \frac{\text{a} \left(1 - {\text{e}}^2 \right)}{\left( 1 - {\text{e}}^2 \sin^2 \varphi \right) ^{3/2}} \\ 
+        {R}_{N}\left( \varphi \right) =& \frac{\text{a}}{\sqrt{1 - {\text{e}}^2 \sin^2 \varphi}}
+    \end{aligned}
+    \label{eq:radius-of-earth-curvature}
+\end{equation}
+
+The Earth's rotation angular velocity in the $\mathrm{e}$ frame $\boldsymbol{\omega}_{\mathrm{ie}}^{\mathrm{e}}$ and in the $\mathrm{n}$ frame $\boldsymbol{\omega}_{\mathrm{ie}}^{\mathrm{n}}$, the angular velocity of the $\mathrm{n}$-frame to the $\mathrm{e}$-frame $\boldsymbol{\omega}_{\mathrm{en}}^{\mathrm{n}}$, and the angular velocity of the $\mathrm{n}$-frame to the $\mathrm{i}$-frame $\boldsymbol{\omega}_{\mathrm{in}}^{\mathrm{n}}$ are expressed as:
+\begin{equation}
+    \begin{aligned}
+        \boldsymbol{\omega}_{\mathrm{ie}}^{\mathrm{e}} = & \left[ \begin{matrix} 0 & 0 & \omega_{\mathrm{e}} \end{matrix} \right]^{T} \\
+        \boldsymbol{\omega}_{\mathrm{ie}}^{\mathrm{n}} = & \left[ \begin{matrix} \omega_{\mathrm{e}} \cos \varphi & 0 & -\omega_{\mathrm{e}} \sin \varphi \end{matrix} \right]^{T} \\
+        \boldsymbol{\omega}_{\mathrm{en}}^{\mathrm{n}} = & \left[ \begin{matrix} {v}_{E}/({R}_{\mathrm{N}} + h) \\
+        -{v}_{\mathrm{N}}/({R}_{\mathrm{M}} + h)\\
+        -{v}_{E} \tan{\varphi}/({R}_{\mathrm{N}} + h) \end{matrix} \right] \\ 
+        \boldsymbol{\omega}_{\mathrm{in}}^{\mathrm{n}} = & \boldsymbol{\omega}_{\mathrm{ie}}^{\mathrm{n}} + \boldsymbol{\omega}_{\mathrm{en}}^{\mathrm{n}}
+    \end{aligned}
+    \label{eq:angular-velocity-relative-to-nframe-and-earth}
+\end{equation}
+
+\section{Inertial Navigation Algorithm}
+
+Incremental IMU measurements are serves as input of KF-GINS. Between $t_{k-1}$ and $t_k$, the angular increment and velocity increment measured by the IMU are denoted as $\Delta \tilde{\boldsymbol{\theta}}_{k}$ and $\Delta \tilde{\boldsymbol{v}}_{k}$. These measurements are corrected for biases and scale factors to obtain compensated angular and velocity increments, $\Delta \boldsymbol{\theta}_{k}$ and $\Delta \boldsymbol{v}_{k}$, which are then used for navigation computation.
+
+\subsection{IMU Error Compensation}
+
+The mathematical model for compensating IMU biases and scale factors is:
+\begin{equation}
+    \begin{aligned}
+        \Delta \boldsymbol{\theta}_{k} =& \left[ \boldsymbol{I}_{3} + \operatorname{diag}(\boldsymbol{s}_{g})\right]^{-1} \left[ \Delta \tilde{\boldsymbol{\theta}}_{k} - \boldsymbol{b}_{g} \Delta t_{k}\right] \\
+        \Delta \boldsymbol{v}_{k} =& \left[ \boldsymbol{I}_{3} + \operatorname{diag}(\boldsymbol{s}_{a})\right]^{-1} \left[ \Delta \tilde{\boldsymbol{v}}_{k} - \boldsymbol{b}_{a} \Delta t_{k} \right].
+    \end{aligned}
+    \label{eq:imu-compensation-equation}
+\end{equation}
+
+Here, $\boldsymbol{b}_{g}$ and $\boldsymbol{b}_{a}$ are the gyroscope and accelerometer biases, while $\boldsymbol{s}_{g}$ and $\boldsymbol{s}_{a}$ are the gyroscope and accelerometer scale factors. $\Delta t_k = t_k - t_{k-1}$ is the sampling interval.
+
+\subsection{Velocity Update}
+
+The velocity update equation in the $\mathrm{n}$ frame is:
+\begin{equation}
+    \boldsymbol{v}_{k}^{\mathrm{n}} = \boldsymbol{v}_{k-1}^{\mathrm{n}} + \Delta \boldsymbol{v}_{f,k}^{\mathrm{n}} + \Delta \boldsymbol{v}_{g/cor,k}^{\mathrm{n}}
+    \label{eq:n-velocity-update-equation}
+\end{equation}
+where, $\boldsymbol{v}_{k-1}^{\mathrm{n}}$ and $\boldsymbol{v}_{k}^{\mathrm{n}}$ are the ground velocities in the $\mathrm{n}$ frame at $t_{k-1}$ and $t_k$, respectively. $\Delta \boldsymbol{v}_{f,k}^{\mathrm{n}}$ is the velocity increment due to specific force, and $\Delta \boldsymbol{v}_{g/cor,k}^{\mathrm{n}}$ is the velocity increment due to gravity and Coriolis effects.
+
+\textbf{(1) Specific Force Integration}
+
+For short integration intervals, the rotation of the $\mathrm{n}$ frame can be approximated as linear. Thus, the specific force integration term can be simplified as:
+\begin{equation}
+    \Delta \boldsymbol{v}_{f,k}^{\mathrm{n}} = \frac{1}{2}\left( \mathbf{C}_{\mathrm{n}(k-1)}^{\mathrm{n}(k)} + \boldsymbol{I}_{3} \right) \underbrace{\int_{{t_{k-1}}}^{{t_k}} \mathbf{C}_{\mathrm{b}(t)}^{\mathrm{b}(k-1)} \boldsymbol{f}^{\mathrm{b}} \left( {t} \right)\text{d}{t}}_{\Delta \boldsymbol{v}_{f,k}^{\mathrm{b}}}
+    \label{eq:n-frame-velocity-integration}
+\end{equation}
+
+Here, $\Delta \boldsymbol{v}_{f,k}^{\mathrm{b}}$ is the specific force integration term in the $\mathrm{b}$ frame. $\mathbf{C}_{\mathrm{n}(k-1)}^{\mathrm{n}(k)}$ represents the rotation of the $\mathrm{n}$ frame from $t_{k-1}$ to $t_k$, which can be approximated using the equivalent rotation vector $\boldsymbol{\zeta}_{\mathrm{n}(k-1)\mathrm{n}(k)}$:
+\begin{equation}
+    \mathbf{C}_{\mathrm{n}(k-1)}^{\mathrm{n}(k)} \approx \boldsymbol{I}_{3} - \left(\boldsymbol{\zeta}_{\mathrm{n}(k-1)\mathrm{n}(k)} \times \right)
+\end{equation}
+where
+\begin{equation}
+    \boldsymbol{\zeta}_{\mathrm{n}(k-1)\mathrm{n}(k)} = \int_{t_{k-1}}^{t_k} \boldsymbol{\omega}_{\mathrm{in}}^{\mathrm{n}}(t) dt \approx \left[ \boldsymbol{\omega}_{\mathrm{ie},k-1/2}^{\mathrm{n}} + \boldsymbol{\omega}_{\mathrm{en},k-1/2}^{\mathrm{n}} \right] \Delta t_k
+    \label{eq:n-frame-rotation-vector}
+\end{equation}
+
+The specific force integration term in the $\mathrm{b}$ frame, $\Delta \boldsymbol{v}_{f,k}^{\mathrm{b}}$, can be computed using IMU measurements. Employing two-sample assumption (linear variations of acceleration and angular velocity), it is expressed as:
+\begin{equation}
+    \Delta \boldsymbol{v}_{f,k}^{\mathrm{b}} = \Delta \boldsymbol{v}_{k} + \frac{1}{2}\left( \Delta \boldsymbol{\theta}_{k} \times \Delta \boldsymbol{v}_{k} \right) + \frac{1}{12} \left( \Delta \boldsymbol{\theta}_{k-1} + \Delta \boldsymbol{v}_{k} + \Delta \boldsymbol{v}_{k-1} \times \Delta \boldsymbol{\theta}_{k} \right)
+    \label{eq:b-frame-velocity-integration}
+\end{equation}
+
+The second and third terms on the right-hand side are the rotational effect and sculling effect compensations, respectively.
+
+\textbf{(2) Gravity and Coriolis Integration}
+
+The gravity and Coriolis acceleration is expressed as:
+\begin{equation}
+    \boldsymbol{a}_{gc} (t) = \boldsymbol{g}_{p}^{\mathrm{n}}(t) - \left[ 2 \boldsymbol{\omega}_{\mathrm{ie}}^{\mathrm{n}} (t) + \boldsymbol{\omega}_{\mathrm{en}}^{\mathrm{n}}(t) \right] \times \boldsymbol{v}^{\mathrm{n}}(t)
+\end{equation}
+
+For short intervals, the integration term can be approximated using trapezoidal integration:
+\begin{equation}
+    \Delta \boldsymbol{v}_{g/cor,k}^{\mathrm{n}} \approx \left[ \boldsymbol{g}_{p}^{\mathrm{n}}(t_{k-1/2}) - \left( 2 \boldsymbol{\omega}_{\mathrm{ie}}^{\mathrm{n}} (t_{k-1/2}) + \boldsymbol{\omega}_{\mathrm{en}}^{\mathrm{n}}(t_{k-1/2}) \right) \times \boldsymbol{v}^{\mathrm{n}}(t_{k-1/2}) \right] \Delta t_k
+    \label{eq:n-frame-gravity-cor-acceleration}
+\end{equation}
+
+\textbf{(3) Algorithm Implementation}
+
+The specific force and gravity-Coriolis integration terms can be computed separately. First, the geographical parameters at $t_{k-1/2}$ are calculated using the IMU position and velocity at $t_{k-1}$ as an initial approximation. Then, $\Delta \boldsymbol{v}_{f,k}^{\mathrm{n}}$ is computed using equations \eqref{eq:b-frame-velocity-integration}, \eqref{eq:n-frame-rotation-vector}, and \eqref{eq:n-frame-velocity-integration}. The gravity-Coriolis term $\Delta \boldsymbol{v}_{g/cor,k}^{\mathrm{n}}$ is computed using equation \eqref{eq:n-frame-gravity-cor-acceleration}. Finally, the velocity update equation \eqref{eq:n-velocity-update-equation} is used to compute the updated velocity in the $\mathrm{n}$ frame.
+
+To refine the approximation, the velocity at $t_{k-1/2}$ is interpolated using the updated velocity at $t_k$, and the position at $t_{k-1/2}$ is extrapolated. The velocity and position at $t_{k-1/2}$ are calculated as:
+\begin{equation}
+    \begin{aligned}
+        \boldsymbol{v}_{k-1/2}^{\mathrm{n}} =& \frac{1}{2} \left(\boldsymbol{v}_{k}^{\mathrm{n}} + \boldsymbol{v}_{k-1}^{\mathrm{n}} \right) \\
+        \boldsymbol{p}_{k-1/2} = & \boldsymbol{p}_{k-1} + \frac{1}{2} \boldsymbol{D}_{R}^{-1} \boldsymbol{v}_{k-1/2}^{\mathrm{n}} \Delta t_k
+    \end{aligned}
+    \label{eq:velocity-position-interpolate-extrapolate}
+\end{equation}
+
+Here, $\boldsymbol{D}_{R}$ is the transformation matrix of relative quantities between the $\mathrm{n}$ frame and geodetic coordinates:
+\begin{equation}
+    \boldsymbol{D}_{{R}}=\left[ \begin{matrix}
+        {R}_{{M}}+{h}&		0&		0\\
+        0&		\left( {R}_{{N}}+{h} \right) \cos \varphi&		0\\
+        0&		0&		-1\\
+    \end{matrix} \right] 
+\end{equation}
+
+The calculated position and velocity at $t_{k-1/2}$ are then used to recompute the geographical parameters and refine the velocity update at $t_k$.
+
+
+\subsection{Position Update}
+
+\textbf{(1) Position Update Equation}
+
+The IMU position is represented using latitude $\varphi$, longitude $\lambda$, and altitude $h$. Latitude and longitude are two angles that can be represented by a quaternion, referred to as the position quaternion $\mathbf{q}_{\mathrm{n}}^{\mathrm{e}}$. The position update for latitude and longitude can be expressed as:
+\begin{equation}
+    \mathbf{q}_{\mathrm{n}(k)}^{\mathrm{e}(k)} = \mathbf{q}_{\mathrm{e}(k-1)}^{\mathrm{e}(k)} \otimes \mathbf{q}_{\mathrm{n}(k-1)}^{\mathrm{e}(k-1)} \otimes \mathbf{q}_{\mathrm{n}(k)}^{\mathrm{n}(k-1)} 
+    \label{eq:position-quaternion-update}
+\end{equation}
+
+Here, $\mathbf{q}_{\mathrm{n}(k)}^{\mathrm{e}(k)}$ and $\mathbf{q}_{\mathrm{n}(k-1)}^{\mathrm{e}(k-1)}$ represent the position quaternions at time $t_{k}$ and $t_{k-1}$. $\mathbf{q}_{\mathrm{e}(k-1)}^{\mathrm{e}(k)}$ and $\mathbf{q}_{\mathrm{n}(k)}^{\mathrm{n}(k-1)}$ are the rotation quaternions for the $\mathrm{e}$ frame and $\mathrm{n}$ frame, respectively.
+
+The rotation vector corresponding to the $\mathrm{n}$-frame rotation quaternion $\mathbf{q}_{\mathrm{n}(k)}^{\mathrm{n}(k-1)}$ is denoted as $\boldsymbol{\zeta}_{\mathrm{n}(k)\mathrm{n}(k-1)}$, and the rotation vector corresponding to the $\mathrm{e}$-frame rotation quaternion $\mathbf{q}_{\mathrm{e}(k-1)}^{\mathrm{e}(k)}$ is denoted as $\boldsymbol{\xi}_{\mathrm{e}(k-1)\mathrm{e}(k)}$. Their expressions are:
+\begin{equation}
+    \begin{aligned}
+        \boldsymbol{\zeta}_{\mathrm{n}(k)\mathrm{n}(k-1)} = & -\left[ \boldsymbol{\omega}_{\mathrm{ie}}^{\mathrm{n}}(t_{k-1/2}) + \boldsymbol{\omega}_{\mathrm{en}}^{\mathrm{n}}(t_{k-1/2}) \right] \Delta t_k \\
+        \boldsymbol{\xi}_{\mathrm{e}(k-1)\mathrm{e}(k)} = & \left[ \boldsymbol{\omega}_{\mathrm{ie}, k-1/2}^{\mathrm{e}} \right] \Delta t_k
+    \end{aligned}
+    \label{eq:n-frame-e-frame-rotation-vector}
+\end{equation}
+
+The altitude is updated using velocity integration, which can be expressed as:
+\begin{equation}
+    h_{k} = h_{k-1} + {v}_{D,k-1/2}^{\mathrm{n}} \Delta t_k
+    \label{eq:position-height-update}
+\end{equation}
+
+Here, ${v}_{D,k-1/2}^{\mathrm{n}}$ represents the downward component of the ground velocity $\boldsymbol{v}_{k-1/2}^{\mathrm{n}}$. Since the positive direction of altitude is opposite to the positive direction of downward velocity, a negative sign is added when updating altitude using velocity.
+
+\textbf{(2) Algorithm Implementation}
+
+In the algorithm implementation, the velocity at time $t_k$ after the velocity update is substituted into equation \eqref{eq:velocity-position-interpolate-extrapolate} to recompute the IMU position and velocity at time $t_{k-1/2}$. The corresponding geographical parameters are then calculated. Using equation \eqref{eq:n-frame-e-frame-rotation-vector}, the rotation vectors for the $\mathrm{n}$-frame and $\mathrm{e}$-frame are computed. The position quaternion $\mathbf{q}_{\mathrm{n}(k)}^{\mathrm{e}(k)}$ is updated using equation \eqref{eq:position-quaternion-update}. The altitude $h_k$ is updated using equation \eqref{eq:position-height-update}. Finally, the updated quaternion and altitude are converted into latitude and longitude to obtain the IMU position at time $t_k$.
+
+\subsection{Attitude Update}
+
+\textbf{(1) Attitude Update Equation}
+
+The attitude update is performed using the attitude quaternion $\mathbf{q}_{\mathrm{b}}^{\mathrm{n}}$, which expressed as follows:
+\begin{equation}
+    \mathbf{q}_{\mathrm{b}(k)}^{\mathrm{n}(k)} = \mathbf{q}_{\mathrm{n}(k-1)}^{\mathrm{n}(k)} \otimes \mathbf{q}_{\mathrm{b}(k-1)}^{\mathrm{n}(k-1)} \otimes \mathbf{q}_{\mathrm{b}(k)}^{\mathrm{b}(k-1)}
+    \label{eq:attitude-quaternion-update}
+\end{equation}
+
+Here, $\mathbf{q}_{\mathrm{b}(k)}^{\mathrm{n}(k)}$ and $\mathbf{q}_{\mathrm{b}(k-1)}^{\mathrm{n}(k-1)}$ represent the attitude quaternions at time $t_{k}$ and $t_{k-1}$. $\mathbf{q}_{\mathrm{n}(k)}^{\mathrm{n}(k-1)}$ and $\mathbf{q}_{\mathrm{b}(k)}^{\mathrm{b}(k-1)}$ are the rotation quaternions for the $\mathrm{n}$ frame and $\mathrm{b}$ frame, respectively.
+
+The rotation vector corresponding to the $\mathrm{n}$-frame rotation quaternion $\mathbf{q}_{\mathrm{n}(k)}^{\mathrm{n}(k-1)}$ is denoted as $\boldsymbol{\zeta}_{\mathrm{n}(k)\mathrm{n}(k-1)}$, as shown in equation \eqref{eq:n-frame-e-frame-rotation-vector}. The rotation vector corresponding to the $\mathrm{b}$-frame rotation quaternion $\mathbf{q}_{\mathrm{b}(k)}^{\mathrm{b}(k-1)}$ is denoted as $\boldsymbol{\phi}_{k}$. Based on the two-sample assumption (linear variation of angular velocity within the integration interval), the equivalent rotation vector for the $\mathrm{b}$-frame is expressed as:
+\begin{equation}
+    \boldsymbol{\phi}_{k} = \Delta \boldsymbol{\theta}_{k} + \frac{1}{12} \left( \Delta \boldsymbol{\theta}_{k-1} \times \Delta \boldsymbol{\theta}_{k} \right)
+    \label{eq:b-frame-rotation-vector}
+\end{equation}
+where, the second term on the right-hand side is the coning effect compensation.
+
+\textbf{(2) Position Interpolation Equation}
+
+To compute the equivalent rotation vector for the $\mathrm{n}$ frame, the position and velocity at time $t_{k-1/2}$ are required. The velocity at $t_{k-1/2}$ can be obtained using equation \eqref{eq:position-height-update}, and the altitude at $t_{k-1/2}$ is interpolated as ${h}_{k-1/2} = ({h}_{k-1} + {h}_{k})/2$. The latitude and longitude at $t_{k-1/2}$ are interpolated using the position quaternion. First, the position quaternion at $t_{k-1/2}$ is computed as:
+\begin{equation}
+    \begin{aligned}
+        \mathbf{q}_{\delta \boldsymbol{\theta}} =& \left(\mathbf{q}_{\mathrm{n}(k-1)}^{\mathrm{n}(k-1)}\right)^{-1} \otimes \mathbf{q}_{\mathrm{n}(k)}^{\mathrm{n}(k)} \\
+        \mathbf{q}_{\mathrm{n}(k-1/2)}^{\mathrm{n}(k-1/2)} =& \mathbf{q}_{\mathrm{n}(k-1)}^{\mathrm{n}(k-1)} \otimes \mathbf{q}_{0.5 \delta \boldsymbol{\theta}}
+    \end{aligned} 
+    \label{eq:position-quaternion-interpolation}
+\end{equation}
+
+Here, $\delta \boldsymbol{\theta}$ is the equivalent rotation vector corresponding to the position change from $t_{k-1}$ to $t_k$, and $0.5 \delta \boldsymbol{\theta}$ represents the interpolated rotation vector. Then $\mathbf{q}_{\mathrm{n}(k-1/2)}^{\mathrm{n}(k-1/2)}$ is converted into latitude and longitude at $t_{k-1/2}$.
+
+\textbf{(3) Algorithm Implementation}
+
+In the algorithm implementation, the IMU position and velocity at time $t_{k-1/2}$ are first computed using 
+equation \eqref{eq:velocity-position-interpolate-extrapolate} and equation \eqref{eq:position-quaternion-interpolation}. Then the position and velocity at $t_{k-1/2}$ are employed to compute the corresponding geographical parameters. The rotation vector for the $\mathrm{b}$ frame is then calculated using equation \eqref{eq:b-frame-rotation-vector}, and the attitude quaternion $\mathbf{q}_{\mathrm{b}(k)}^{\mathrm{n}(k)}$ is updated using equation \eqref{eq:attitude-quaternion-update}.
+
+\section{Integrated Navigation Algorithm}
+
+\subsection{Kalman Filter Equations}
+
+Since the system equations of integrated navigation are highly nonlinear, to meet the linearization requirements of the Kalman filter for the state and observation equations, we adopt the Extended Kalman Filter (EKF) or Error-State Kalman Filter (ESKF) to implement the integrated navigation algorithm. The discrete state and observation equations are expressed as:
+\begin{equation}
+    \begin{aligned}
+        \delta \boldsymbol{x}_{k} =& \boldsymbol{\Phi}_{k/k-1} \delta \boldsymbol{x}_{k-1} + \boldsymbol{w}_{k-1} \\
+        \delta \boldsymbol{z}_{k} =& \boldsymbol{H}_{k} \delta \boldsymbol{x}_{k} + \boldsymbol{v}_{k}
+    \end{aligned}
+\end{equation}
+%
+Here, $\delta \boldsymbol{x}_{k-1}$ and $\delta \boldsymbol{x}_{k}$ denote the error state vectors ($n \times 1$) at the time steps ${t}_{k-1}$ and ${t_k}$, respectively; $\boldsymbol{\Phi}_{k/k-1}$ is the state transition matrix ($n \times n$) from ${t}_{k-1}$ to ${t_k}$; $\delta \boldsymbol{z}_{k}$ is the measurement vector ($m \times 1$) at ${t_k}$; $\boldsymbol{H}_{k}$ is the measurement matrix ($m \times n$); $\boldsymbol{w}_{k-1}$ is the discrete-time system noise ($n \times 1$), and $\boldsymbol{v}_{k}$ is the measurement noise ($m \times 1$). Here, $n$ and $m$ represent the dimensions of the system state and measurement vector, respectively.
+
+Debote $\boldsymbol{P}_{k}$ as the covariance of the system state vector $\delta \boldsymbol{x}_{k}$ at time $t_{k}$, and $\boldsymbol{Q}_{k-1}$ as the covariance of the system noise between $t_{k-1}$ and $t_{k}$. The prediction of the system state and covariance in the Kalman filter can be expressed as:
+\begin{equation}
+    \begin{aligned}
+        \delta \boldsymbol{x}_{k/k-1} =& \boldsymbol{\Phi}_{k/k-1} \delta \boldsymbol{x}_{k-1} \\
+        \boldsymbol{P}_{k/k-1} =& \boldsymbol{\Phi}_{k/k-1} \boldsymbol{P}_{k-1} \boldsymbol{\Phi}_{k/k-1}^{T} + \boldsymbol{Q}_{k-1}
+    \end{aligned}
+    \label{eq:kalman-prediction-equation}
+\end{equation}
+
+According to the minimum variance criterion, the observation update equations of the Kalman filter at time $t_{k}$ can be derived as:
+\begin{equation}
+    \begin{aligned}
+        \boldsymbol{K}_k =& \boldsymbol{P}_{k/k-1} \boldsymbol{H}_k^T \left( \boldsymbol{H}_k \boldsymbol{P}_{k/k-1} \boldsymbol{H}_k^T + \boldsymbol{R}_k \right)^{-1} \\
+        \delta \boldsymbol{x}_k =& \delta \boldsymbol{x}_{k/k-1} + \boldsymbol{K}_k \delta \boldsymbol{z}\\
+        \boldsymbol{P}_k =& (\boldsymbol{I} - \boldsymbol{K}_k \boldsymbol{H}_k)\boldsymbol{P}_{k/k-1} (\boldsymbol{I} - \boldsymbol{K}_k \boldsymbol{H}_k)^T + \boldsymbol{K}_k \boldsymbol{R}_k \boldsymbol{K}_k^T 
+    \end{aligned}
+    \label{eq:kalman-update-equation}
+\end{equation}
+
+Here, $\boldsymbol{K}_{k}$ is the Kalman gain ($n \times m$), $\boldsymbol{R}_{k}$ is the covariance matrix of the observation noise ($m \times m$), and $\delta \boldsymbol{z}_{k/k-1}$ is the measurement vector at time $t_{k}$ ($m \times 1$).
+
+\subsection{Error Definition and System State Vector} \label{subsec:error-definition-and-system-state-vector}
+
+\textbf{(1) Error Perturbation Definition}
+
+The system state is perturbed with the error state, which is added to the system state vector. Position and velocity errors are perturbed in the $\mathrm{n}$ frame, while attitude errors adopt the $\boldsymbol{\phi}$ angle error model. The error perturbation is defined as:
+\begin{equation}
+    \begin{aligned}
+        \hat{\boldsymbol{r}}^{\mathrm{n}}  = & \boldsymbol{r}^{\mathrm{n}} + \delta \boldsymbol{r}^{\mathrm{n}} \\
+        \hat{\boldsymbol{v}}^{\mathrm{n}}  = & \boldsymbol{v}^{\mathrm{n}} + \delta \boldsymbol{v}^{\mathrm{n}} \\
+        \hat{\mathbf{C}}_{\mathrm{b}}^{\mathrm{n}}  = & \left[\boldsymbol{I}_{3} - \left(\boldsymbol{\phi}\times\right)\right]\mathbf{C}_{\mathrm{b}}^{\mathrm{n}}
+    \end{aligned}
+    \label{eq:state-error-perturbance-definition}
+\end{equation}
+
+The error definitions for IMU biases and scale factors are:
+\begin{equation}
+    \begin{aligned}
+        \hat{\boldsymbol{b}}_{g} = & \boldsymbol{b}_{g} - \delta \boldsymbol{b}_{g} \\
+        \hat{\boldsymbol{b}}_{a} = & \boldsymbol{b}_{a} - \delta \boldsymbol{b}_{a} \\  
+        \hat{\boldsymbol{s}}_{g} = & \boldsymbol{s}_{g} - \delta \boldsymbol{s}_{g} \\
+        \hat{\boldsymbol{s}}_{a} = & \boldsymbol{s}_{a} - \delta \boldsymbol{s}_{a} \\
+    \end{aligned}
+\end{equation}
+
+\textbf{(2) IMU Measurements and Error Representation}
+
+Substituting the bias and scale factor errors into equation \eqref{eq:imu-compensation-equation}, the compensated IMU measurements can be expressed as:
+\begin{equation}
+    \begin{aligned}
+        \Delta \hat{\boldsymbol{\theta}}_{k} =& \left[ \boldsymbol{I}_{3} + \operatorname{diag}(\hat{\boldsymbol{s}}_{g})\right]^{-1} \left[ \Delta \tilde{\boldsymbol{\theta}}_{k} - \hat{\boldsymbol{b}}_{g} \Delta t_{k}\right] \\
+        \Delta \hat{\boldsymbol{v}}_{k} =& \left[ \boldsymbol{I}_{3} + \operatorname{diag}(\hat{\boldsymbol{s}}_{a})\right]^{-1} \left[ \Delta \tilde{\boldsymbol{v}}_{k} - \hat{\boldsymbol{b}}_{a} \Delta t_{k} \right].
+    \end{aligned}
+\end{equation}
+
+Dividing both sides of the above equations by $\Delta t_k$, the compensated IMU measurements in rate form can be obtained. Considering that the biases and scale factors are small and ignoring second-order error terms, the following approximation can be made: $\left[\boldsymbol{I}_3 + \operatorname{diag}(\hat{\boldsymbol{s}}_{g})\right]^{-1} \approx \left[\boldsymbol{I}_3 - \operatorname{diag}(\hat{\boldsymbol{s}}_{g})\right]$. Considering the random noise in IMU measurements, the rate-form IMU measurements can be expressed as:
+\begin{equation}
+    \begin{aligned}
+        \hat{\boldsymbol{\omega}}_{\mathrm{ib}}^{\mathrm{b}} = \left[\boldsymbol{I}_3 - \operatorname{diag}(\boldsymbol{s}_{g})\right] \left(\tilde{\boldsymbol{\omega}}_{\mathrm{ib}}^{\mathrm{b}} - {\boldsymbol{b}}_{g} \right) + \delta \boldsymbol{b}_{g} +  \operatorname{diag}(\delta \boldsymbol{s}_{g}) \tilde{\boldsymbol{\omega}}_{\mathrm{ib}}^{\mathrm{b}} \approx \boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}} + \delta \boldsymbol{b}_{g} + \operatorname{diag}(\boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}}) \delta \boldsymbol{s}_{g}  + \boldsymbol{w}_{g} \\
+        \hat{\boldsymbol{f}}_{\mathrm{ib}}^{\mathrm{b}} = \left[\boldsymbol{I}_3 - \operatorname{diag}(\boldsymbol{s}_{a})\right] \left(\tilde{\boldsymbol{f}}_{\mathrm{ib}}^{\mathrm{b}} - {\boldsymbol{b}}_{a} \right) + \delta \boldsymbol{b}_{a} +  \operatorname{diag}(\delta \boldsymbol{s}_{a}) \tilde{\boldsymbol{f}}_{\mathrm{ib}}^{\mathrm{b}} \approx \boldsymbol{f}_{\mathrm{ib}}^{\mathrm{b}} + \delta \boldsymbol{b}_{a} + \operatorname{diag}(\boldsymbol{f}_{\mathrm{ib}}^{\mathrm{b}}) \delta \boldsymbol{s}_{a}  + \boldsymbol{w}_{a} \\
+    \end{aligned}
+\end{equation}
+
+Here, $\boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}}$ and $\boldsymbol{f}_{\mathrm{ib}}^{\mathrm{b}}$ represent the true angular velocity and acceleration, respectively, while $\boldsymbol{w}_{g}$ and $\boldsymbol{w}_{a}$ represent the white noise in angular velocity and acceleration measurements. The errors in angular velocity and acceleration can be expressed as:
+\begin{equation}
+    \begin{aligned}
+        \delta \boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}} =& \hat{\boldsymbol{\omega}}_{\mathrm{ib}}^{\mathrm{b}} - \boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}} = \delta \boldsymbol{b}_{g} + \operatorname{diag}(\boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}}) \delta \boldsymbol{s}_{g} + \boldsymbol{w}_{g} \\
+        \delta \boldsymbol{f}_{\mathrm{ib}}^{\mathrm{b}} =& \hat{\boldsymbol{f}}_{\mathrm{ib}}^{\mathrm{b}} - \boldsymbol{f}_{\mathrm{ib}}^{\mathrm{b}} = \delta \boldsymbol{b}_{a} + \operatorname{diag}(\boldsymbol{f}_{\mathrm{ib}}^{\mathrm{b}}) \delta \boldsymbol{s}_{a} + \boldsymbol{w}_{a}
+    \end{aligned}
+    \label{eq:acceleration-angular-velocity-error-definition}
+\end{equation}
+
+Considering the characteristics of IMU biases and scale factors, the bias and scale factor errors are modeled as first-order Gauss-Markov processes, with the continuous-time differential equations expressed as:
+\begin{equation}
+    \begin{aligned}
+        \delta \dot{\boldsymbol{b}}_{g}({t}) = & -{\dfrac{1}{{T}_{gb}}} \delta \boldsymbol{b}_{g}({t}) + \boldsymbol{w}_{gb}({t}) \\
+        \delta \dot{\boldsymbol{b}}_{a}({t}) = & -{\dfrac{1}{{T}_{ab}}} \delta \boldsymbol{b}_{a}({t}) + \boldsymbol{w}_{ab}({t}) \\
+        \delta \dot{\boldsymbol{s}}_{g}({t}) = & -{\dfrac{1}{{T}_{gs}}} \delta \boldsymbol{s}_{g}({t}) + \boldsymbol{w}_{gs}({t}) \\
+        \delta \dot{\boldsymbol{s}}_{a}({t}) = & -{\dfrac{1}{{T}_{as}}} \delta \boldsymbol{s}_{a}({t}) + \boldsymbol{w}_{as}({t})
+    \end{aligned}
+    \label{eq:imu-error-difference-equations}
+\end{equation}
+
+Here, ${T}_{gb}$, ${T}_{ab}$, ${T}_{gs}$, and ${T}_{as}$ represent the correlation times of gyroscope bias, accelerometer bias, gyroscope scale factor, and accelerometer scale factor, respectively. $\boldsymbol{w}_{gb}$, $\boldsymbol{w}_{ab}$, $\boldsymbol{w}_{gs}$, and $\boldsymbol{w}_{as}$ represent the driving Gaussian white noise for gyroscope bias, accelerometer bias, gyroscope scale factor, and accelerometer scale factor, respectively.
+
+\textbf{(3) System State Vector and Propagation Noise}
+
+The system state vector for Kalman filtering is defined as:
+\begin{equation}
+    \delta \boldsymbol{x} = \left[ \begin{matrix}
+        \left(\delta \boldsymbol{r}^{{\mathrm{n}}} \right)^{T}& 
+        \left(\delta \boldsymbol{v}^{{\mathrm{n}}} \right)^{T}& 
+        \left(\boldsymbol{\phi} \right)^{T}& 
+        \left(\delta \boldsymbol{b}_{{g}} \right)^{T}& 
+        \left(\delta \boldsymbol{b}_{{a}} \right)^{T}& 
+        \left(\delta \boldsymbol{s}_{{g}} \right)^{T}& 
+        \left(\delta \boldsymbol{s}_{{a}} \right)^{T}
+    \end{matrix} \right]^{T}
+\end{equation}
+
+The propagation noise includes IMU measurement noise and the driving noise of IMU bias and scale factor errors, defined as:
+\begin{equation}
+    \boldsymbol{w} = \begin{bmatrix}
+        \left(\boldsymbol{w}_{g}\right)^{T} &
+        \left(\boldsymbol{w}_{a}\right)^{T} &
+        \left(\boldsymbol{w}_{gb}\right)^{T} &
+        \left(\boldsymbol{w}_{ab}\right)^{T} &
+        \left(\boldsymbol{w}_{gs}\right)^{T} &
+        \left(\boldsymbol{w}_{as}\right)^{T} &
+    \end{bmatrix}^{T}
+    \label{eq:INS-propagation-noise-definition}
+\end{equation}
+
+\subsection{Error Differential Equations}
+
+To compute the discrete system equations for Kalman filtering, we first derive the continuous error differential equations. The differential equations for IMU position, velocity, and attitude are:
+\begin{equation}
+    \begin{aligned}
+        \dot \varphi =& \frac{{v_N}}{{R_M+h}}, \quad \dot \lambda = \frac{{v_E}}{{(R_N+h)}\cos\varphi}, \quad \dot {{h}} = {-v_D} \\
+        \dot{\boldsymbol{v}}^{\mathrm{n}} =& \mathbf{C}_{\mathrm{b}}^{\mathrm{n}}\boldsymbol{f}^{\mathrm{b}}-(2\boldsymbol{\omega }_{\mathrm{ie}}^{\mathrm{n}}+\boldsymbol{\omega }_{\mathrm{en}}^{\mathrm{n}})\times \boldsymbol{v}^{\mathrm{n}}+\boldsymbol{g}_{\mathrm{p}}^{\mathrm{n}} \\
+        \dot{\mathbf{C}}_{\mathrm{b}}^{\mathrm{n}} =& \mathbf{C}_{\mathrm{b}}^{\mathrm{n}} (\boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}} \times) - (\boldsymbol{\omega}_{\mathrm{in}}^{\mathrm{n}} \times) \mathbf{C}_{\mathrm{b}}^{\mathrm{n}}
+    \end{aligned}
+    \label{eq:navigation-state-difference-equations}
+\end{equation}
+
+Since position perturbance are defined in the $\mathrm{n}$-frame, while absolute positions are expressed in geodetic coordinates (latitude, longitude, and altitude), the relationship between the $\mathrm{n}$ frame position error $\delta \boldsymbol{r}^{\mathrm{n}} = \begin{bmatrix} \delta r_{N} & \delta r_E & \delta r_D \end{bmatrix}$ and the geodetic coordinate error $\delta \boldsymbol{p} = \begin{bmatrix}\delta \varphi & \delta \lambda & \delta h\end{bmatrix}$ is:
+\begin{equation}
+    \delta {r_{N}} = \delta\varphi({R_M+h}), \quad
+    \delta {r_{E}} = \delta\lambda({R_{N}+h})\cos\varphi, \quad
+    \delta {r_{D}} = -\delta{h} 
+\end{equation}
+
+Combining the above differential equations with the error perturbation definitions in equation \eqref{eq:state-error-perturbance-definition}, the error differential equations for IMU position, velocity, and attitude are:
+\begin{equation}
+    \begin{aligned}
+        \delta \dot{\boldsymbol{r}}^{\mathrm{n}} =& -\boldsymbol{\omega }_{\mathrm{en}}^{\mathrm{n}}\times \delta \boldsymbol{r}^{\mathrm{n}}- \boldsymbol{v}^{\mathrm{n}} \times \delta \boldsymbol{\theta} +\delta \boldsymbol{v}^{\mathrm{n}} \\ 
+        \delta \dot{\boldsymbol{v}}^{\mathrm{n}} =& \mathbf{C}_{\mathrm{b}}^{\mathrm{n}}\delta \boldsymbol{f}_{\mathrm{ib}}^{\mathrm{b}}+\boldsymbol{f}^{\mathrm{n}}\times \boldsymbol{\phi }-(2\boldsymbol{\omega }_{\mathrm{ie}}^{\mathrm{n}}+\boldsymbol{\omega }_{\mathrm{en}}^{\mathrm{n}})\times \delta \boldsymbol{v}^{\mathrm{n}}+\boldsymbol{v}^{\mathrm{n}}\times (2\delta \boldsymbol{\omega }_{\mathrm{ie}}^{\mathrm{n}}+\delta \boldsymbol{\omega }_{\mathrm{en}}^{\mathrm{n}})+\delta \boldsymbol{g}_{\mathrm{p}}^{\mathrm{n}} \\
+        \dot{\boldsymbol{\phi}} =& - \boldsymbol{\omega}_{\mathrm{in}}^{\mathrm{n}} \times {\boldsymbol{\phi}} +\delta\boldsymbol{\omega}_{\mathrm{in}}^{\mathrm{n}}-\mathbf{C}_{\mathrm{b}}^{\mathrm{n}}\delta\boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}}
+    \end{aligned}
+    \label{eq:navigation-state-error-difference-equations}
+\end{equation}
+
+Where:
+\begin{equation}
+    \begin{aligned}
+        \delta \boldsymbol{\theta} =& 
+        \left[ \begin{matrix}
+        0&		1/\left( {R}_{\mathrm{N}}+{h} \right)&		0\\
+        -1/\left( {R}_{\mathrm{M}}+{h} \right)&		0&		0\\
+        0&		-\tan \varphi /\left( {R}_{\mathrm{N}}+{h} \right)&		0\\
+        \end{matrix} \right] 
+        \delta \boldsymbol{r}^{\mathrm{n}} \\ 
+        \delta \boldsymbol{\omega}_{\mathrm{ie}}^{\mathrm{n}} =& \left[\begin{matrix}	\displaystyle{-\frac{\omega_{\mathrm{e}}\sin\varphi}{{R}_{\mathrm{M}}+{h}}\delta {r}_{\mathrm{N}}} & 0 & \displaystyle{-\frac{\omega_{\mathrm{e}}\cos\varphi}{{R}_{\mathrm{M}}+{h}}\delta {r}_{\mathrm{N}}}	\end{matrix}\right]^\text{T}, \quad 
+        \delta \boldsymbol{g}_{p}^{\mathrm{n}}=\left[ \begin{matrix}
+            0 & 0 & \displaystyle{\frac{2{g}\left( \varphi ,{h} \right)}{\sqrt{{R}_{\mathrm{M}}{R}_{\mathrm{N}}}+{h}}\delta {r}_{\mathrm{D}}}\\
+        \end{matrix} \right]^T \\
+        \delta \boldsymbol{\omega}_{\mathrm{en}}^{\mathrm{n}} =& \left[\begin{matrix}
+            \dfrac{{v}_{E}}{({R}_{N}+{h})^2}\delta {r}_{D} + \dfrac{1}{{R}_{N}+{h}}\delta {v}_{E} \\
+            -\dfrac{{v}_{N}}{({R}_{M}+{h})^2}\delta {r}_{D}  - \dfrac{1}{{R}_{M}+{h}}\delta {v}_{N}  \\
+            -\dfrac{{v}_{E}}{({R}_{M}+{h})({R}_{N}+{h})\cos^2\varphi}\delta {r}_{N} - \dfrac{{v}_{E}\tan\varphi}{({R}_{N}+{h})^2}\delta {r}_{D} - \dfrac{\tan\varphi}{({R}_{N}+{h})}\delta {v}_{E}
+        \end{matrix}\right]
+    \end{aligned}
+\end{equation}
+
+\subsection{State Transition Matrix and Noise Covariance Matrix}
+
+The continuous-time system state differential equation for Kalman filtering is expressed as:
+\begin{equation}
+    \delta \dot{\boldsymbol{x}}({t}) = \boldsymbol{F}({t}) \delta \boldsymbol{x}({t}) + \boldsymbol{G}({t}) \boldsymbol{w}({t})
+\end{equation}
+
+Substituting the IMU acceleration and angular velocity measurement errors from equation \eqref{eq:acceleration-angular-velocity-error-definition} into the position, velocity, and attitude differential equations \eqref{eq:navigation-state-error-difference-equations}, the continuous-time state transition matrix is:
+\begin{equation}
+    \boldsymbol{F}=\left[ \begin{matrix}
+        \boldsymbol{F}_{\mathrm{rr}}&		\boldsymbol{I}_3&		0&		0&		0&		0&		0\\
+        \boldsymbol{F}_{\mathrm{vr}}&		\boldsymbol{F}_{\mathrm{vv}}&		[(\mathbf{C}_{\mathrm{b}}^{\mathrm{n}}\boldsymbol{f}^{\mathrm{b}})\times ]&		0&		\mathbf{C}_{\mathrm{b}}^{\mathrm{n}}&		0&		\mathbf{C}_{\mathrm{b}}^{\mathrm{n}}{diag}(\boldsymbol{f}{\mathrm{ib}}^{\mathrm{b}})\\
+        \boldsymbol{F}_{\phi \mathrm{r}}&		\boldsymbol{F}_{\phi \mathrm{v}}&		-(\boldsymbol{\omega }_{\mathrm{in}}^{\mathrm{n}}\times )&		-\mathbf{C}_{\mathrm{b}}^{\mathrm{n}}&		0&		-\mathbf{C}_{\mathrm{b}}^{\mathrm{n}}{diag}(\boldsymbol{\omega }_{\mathrm{ib}}^{\mathrm{b}})&		0\\
+        0&		0&		0&		\displaystyle{\frac{-1}{{T}_{gb}}\boldsymbol{I}_3}&		0&		0&		0\\
+        0&		0&		0&		0&		\displaystyle{\frac{-1}{{T}_{{ab}}}\boldsymbol{I}_3}&		0&		0\\
+        0&		0&		0&		0&		0&		\displaystyle{\frac{-1}{{T}_{{gs}}}\boldsymbol{I}_3}&		0\\
+        0&		0&		0&		0&		0&		0&		\displaystyle{\frac{-1}{{T}_{{as}}}\boldsymbol{I}_3}\\
+    \end{matrix} \right] 
+\end{equation}
+
+The continuous-time noise driving matrix is:
+\begin{equation}
+    {\boldsymbol{G}}=\left[ \begin{matrix}
+        0&		0&		0&		0&		0&		0\\
+        \mathbf{C}_{\mathrm{b}}^{\mathrm{n}}&		0&		0&		0&		0&		0\\
+        0&		\mathbf{C}_{\mathrm{b}}^{\mathrm{n}}&		0&		0&		0&		0\\
+        0&		0&		\boldsymbol{I}_3&		0&		0&		0\\
+        0&		0&		0&		\boldsymbol{I}_3&		0&		0\\
+        0&		0&		0&		0&		\boldsymbol{I}_3&		0\\
+        0&		0&		0&		0&		0&		\boldsymbol{I}_3\\
+    \end{matrix} \right] 
+\end{equation}
+
+Based on the propagation noise definition in equation \eqref{eq:INS-propagation-noise-definition}, the system noise covariance matrix is:
+\begin{equation}
+    {\boldsymbol{q}}{(t)}=\left[ \begin{matrix}
+        \renewcommand{\arraystretch}{1.5}
+        \text{VRW}^2\boldsymbol{I}_3&		0&		0&		0&		0&		0\\
+        0&		\text{ARW}^2\boldsymbol{I}_3&		0&		0&		0&		0\\
+        0&		0&		\dfrac{2\sigma _{{gb}}^{2}}{{T}_{{gb}}}\boldsymbol{I}_3&		0&		0&		0\\
+        0&		0&		0&		\dfrac{2\sigma _{{ab}}^{2}}{{T}_{{ab}}}\boldsymbol{I}_3&		0&		0\\
+        0&		0&		0&		0&		\dfrac{2\sigma _{{gs}}^{2}}{{T}_{{gs}}}\boldsymbol{I}_3&		0\\
+        0&		0&		0&		0&		0&		\dfrac{2\sigma _{{as}}^{2}}{{T}_{{as}}}\boldsymbol{I}_3\\
+    \end{matrix} \right] 
+\end{equation}
+
+Here, $\text{VRW}$ and $\text{ARW}$ are the velocity random walk and angle random walk parameters of the IMU, while $\sigma _{gb}$, $\sigma _{ab}$, $\sigma _{gs}$, and $\sigma _{as}$ are the standard deviations of the gyroscope bias, accelerometer bias, gyroscope scale factor, and accelerometer scale factor, respectively.
+
+By applying a first-order approximation to the continuous-time system differential equations, the discrete-time state transition matrix $\boldsymbol{\Phi}_{k/k-1}$ and the noise covariance matrix $\boldsymbol{Q}_{k}$ can be derived as:
+\begin{equation}
+    \begin{aligned}
+        \boldsymbol{\Phi}_{k/k-1} =& \exp\left( \boldsymbol{F}({t_{k-1}})\Delta t_k \right) \approx \boldsymbol{I} + \boldsymbol{F}({t_{k-1}})\Delta t_k\\
+        \boldsymbol{Q}_{k} \approx& \frac{1}{2}\left[ \boldsymbol{\Phi }_{{k}/{k}-1}\boldsymbol{G}({t}_{{k}-1})\boldsymbol{q}({t}_{{k}-1})\boldsymbol{G}^{{T}}({t}_{{k}-1})\boldsymbol{\Phi}_{{k}/{k}-1}^{{T}}+\boldsymbol{G}({t}_{k}) \boldsymbol{q}({t}_{{k}})\boldsymbol{G}^{{T}}({t}_{{k}}) \right] \Delta t_k
+    \end{aligned}
+\end{equation}
+
+Then, Kalman prediction equations \eqref{eq:kalman-prediction-equation} are employed to predict the state and update the covariance matrix.
+
+\subsection{GNSS Position Observation Equation}\label{subsec:gnss-position-observation-equation}
+
+GNSS measures the geodetic coordinates of the GNSS antenna phase center, while INS calculates the position of the IMU measurement center. Therefore, when integrating GNSS and INS, it is necessary to compensate for the lever arm $\boldsymbol{\ell}_{ant}^{\mathrm{b}}$ between the IMU and the GNSS antenna. When constructing the GNSS position observation equation, the IMU position is first converted to the GNSS antenna phase center position:
+\begin{equation}
+    \label{eq:gnss-antenna-position-from-imu-position}
+    {\boldsymbol{r}}_{G}^{\mathrm{n}} = {\boldsymbol{r}}_{I}^{\mathrm{n}} + {\mathbf{C}}_{\mathrm{b}}^{\mathrm{n}}\boldsymbol{\ell}_{ant}^{\mathrm{b}}
+\end{equation}
+
+The GNSS-measured position is expressed as $\tilde{\boldsymbol{r}}_{G}^{\mathrm{n}} = {\boldsymbol{r}}_{G}^{\mathrm{n}} - \boldsymbol{n}_{r}$, where $\boldsymbol{n}_{r}$ represents the GNSS position measurement error in the $\mathrm{n}$ frame, and its noise covariance is denoted as $\boldsymbol{R}_{r}$.
+
+The GNSS position measurement vector is expressed as:
+\begin{equation}
+    \begin{aligned}
+        \delta \boldsymbol{z}_{r}^{\mathrm{n}} =& \hat{\boldsymbol{r}}_{G}^{\mathrm{n}}-\tilde{\boldsymbol{r}}_{G}^{\mathrm{n}} \\
+        \delta \boldsymbol{z}_{r}^{\mathrm{n}} \approx& \delta \boldsymbol{r}^{\mathrm{n}}+(\mathbf{C}_{\mathrm{b}}^{\mathrm{n}} \boldsymbol{\ell}_{ant}^{\mathrm{b}})\times \boldsymbol{\phi }+\boldsymbol{n}_{r} \\
+        \delta \boldsymbol{z}_{r}^{\mathrm{n}} =& \boldsymbol{H}_{r} \delta \boldsymbol{x} + \boldsymbol{n}_{r}
+    \end{aligned}
+\end{equation}
+where $\boldsymbol{H}_{r}$ is the measurement matrix, expressed as:
+\begin{equation}
+    {\boldsymbol{H}_{r}}=\left[ \begin{matrix}
+        \boldsymbol{I}_3&		\boldsymbol{0}_3&		[(\mathbf{C}_{\mathrm{b}}^{\mathrm{n}}\boldsymbol{\ell }_{ant}^{\mathrm{b}})\times ]&		\boldsymbol{0}_3&		\boldsymbol{0}_3&		\boldsymbol{0}_3&		\boldsymbol{0}_3\\
+    \end{matrix} \right] 
+\end{equation}
+
+Generally, the GNSS receiver and INS output positions are expressed in geodetic coordinates, i.e., $\hat{\boldsymbol{p}}_{I}$ and $\tilde{\boldsymbol{p}}_{G}$. The predicted GNSS antenna phase center position $\hat{\boldsymbol{p}}_{G}$ and the GNSS measurement vector can be expressed as:
+\begin{equation}
+    \begin{aligned}
+        \hat{\boldsymbol{p}}_{G} =& \hat{\boldsymbol{p}}_{I} + \boldsymbol{D}_{R}^{-1} \hat{\mathbf{C}}_{\mathrm{b}}^{\mathrm{n}}\boldsymbol{\ell}_{ant}^{\mathrm{b}} \\
+        \delta \boldsymbol{z}_{r}^{\mathrm{n}} =& \boldsymbol{D}_{\mathrm{R}} \left(\hat{\boldsymbol{p}}_{G} - \tilde{\boldsymbol{p}}_{G}\right)
+    \end{aligned}
+\end{equation}
+where
+\begin{equation}
+    \boldsymbol{D}_{R}=\left[ \begin{matrix}
+        {R}_{\mathrm{M}}+{h}&		0&		0\\
+        0&		\left( {R}_{\mathrm{N}}+{h} \right) \cos \varphi&		0\\
+        0&		0&		-1\\
+    \end{matrix} \right] 
+\end{equation}
+
+Using the INS-predicted position and GNSS-measured position at time $t_k$, the measurement vector $\delta \boldsymbol{z}_{r,k}^{\mathrm{n}}$, measurement matrix $\boldsymbol{H}_{r,k}$, and observation noise covariance $\boldsymbol{R}_{r,k}$ can be calculated. The Kalman update equation \eqref{eq:kalman-update-equation} is then used to update the system state vector and covariance matrix.
+
+\subsection{GNSS Velocity Observation Equation}
+
+Differentiating Eq.\eqref{eq:gnss-antenna-position-from-imu-position} with respect to time, we obtain the GNSS antenna phase center velocity expressed in terms of the IMU velocity:
+\begin{equation}
+    \label{eq:gnss-antenna-velocity-from-imu-velocity}
+    \boldsymbol{v}_{G}^{\mathrm{n}} = \boldsymbol{v}_{I}^{\mathrm{n}} + \mathbf{C}_{\mathrm{b}}^{\mathrm{n}} \left(\boldsymbol{\omega}_{\mathrm{n} \mathrm{b}}^{\mathrm{b}} \times \right) \boldsymbol{\ell}_{ant}^{\mathrm{b}}
+\end{equation}
+where $\boldsymbol{\omega}_{\mathrm{n} \mathrm{b}}^{\mathrm{b}} = \boldsymbol{\omega}_{\mathrm{i} \mathrm{b}}^{\mathrm{b}} - \mathbf{C}_{\mathrm{n}}^{\mathrm{b}} \boldsymbol{\omega}_{\mathrm{in}}^{\mathrm{n}}$. 
+
+The GNSS-measured velocity is expressed as $\tilde{\boldsymbol{v}}_{G}^{\mathrm{n}} = \boldsymbol{v}_{G}^{\mathrm{n}} - \boldsymbol{n}_{v}$, and the covariance of the velocity measurement noise $\boldsymbol{n}_{v}$ is denoted as $\boldsymbol{R}_{v}$.
+
+Substituting the error defination from Sec.\ref{subsec:error-definition-and-system-state-vector} into Eq.\eqref{eq:gnss-antenna-velocity-from-imu-velocity}, we obtain the GNSS velocity measurement vector:
+\begin{equation}
+    \begin{aligned}
+    \delta \boldsymbol{z}_{v}^{\mathrm{n}} =& \hat{\boldsymbol{r}}_{G}^{\mathrm{n}} - \tilde{\boldsymbol{r}}_{G}^{\mathrm{n}} \\
+    \delta \boldsymbol{z}_{v}^{\mathrm{n}} \approx& \delta \boldsymbol{v}^{\mathrm{n}} - \boldsymbol{\omega}_{\mathrm{in}}^{\mathrm{n}}\times \left(\mathbf{C}_{\mathrm{b}}^{\mathrm{n}} \boldsymbol{\ell}_{ant}^{\mathrm{b}}\right)\times \boldsymbol{\phi} - \left[\mathbf{C}_{\mathrm{b}}^{\mathrm{n}} \left(\boldsymbol{\ell}_{ant}^{\mathrm{b}} \times \boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}}\right)\right]\times \boldsymbol{\phi} - \mathbf{C}_{\mathrm{b}}^{\mathrm{n}} \left(\boldsymbol{\ell}_{ant}^{\mathrm{b}} \times \right) \delta \boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}} + \boldsymbol{n}_{v} \\
+    \delta \boldsymbol{z}_{v}^{\mathrm{n}} =& \boldsymbol{H}_{v} \delta \boldsymbol{x} + \boldsymbol{n}_{v}
+    \end{aligned}
+\end{equation}
+where the error-state of $\boldsymbol{\omega}_{\mathrm{in}}^{\mathrm{n}}$ is neglected due to its minimal magnitude during typical motion, and $\boldsymbol{H}_{v}$ is the GNSS velocity measurement matrix:
+\begin{equation}
+    \boldsymbol{H}_{v} = \begin{bmatrix}
+        \boldsymbol{0}_3 & \boldsymbol{I}_3 & \boldsymbol{H}_{v,3} & -\mathbf{C}_{\mathrm{b}}^{\mathrm{n}} \left(\boldsymbol{\ell}_{ant}^{\mathrm{b}} \times \right) & \boldsymbol{0}_3 & -\mathbf{C}_{\mathrm{b}}^{\mathrm{n}} \left(\boldsymbol{\ell}_{ant}^{\mathrm{b}} \times \right) \operatorname{diag}(\boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}}) & \boldsymbol{0}_3
+    \end{bmatrix}
+\end{equation}
+where $\boldsymbol{H}_{v,3} = - \boldsymbol{\omega}_{\mathrm{in}}^{\mathrm{n}}\times \left(\mathbf{C}_{\mathrm{b}}^{\mathrm{n}} \boldsymbol{\ell}_{ant}^{\mathrm{b}}\right)\times  - \left[\mathbf{C}_{\mathrm{b}}^{\mathrm{n}} \left(\boldsymbol{\ell}_{ant}^{\mathrm{b}} \times \boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}}\right)\right]\times $.
+
+The GNSS velocity measurement model is then employed to perform the system update by Eq.\eqref{eq:kalman-update-equation}.
+
+
+\subsection{ODO/NHC Observation Equation}
+ODO/NHC measurements are designed for wheeled platforms, where the odometer (ODO) provides the forward speed $v_{odo}$ and the non-holonomic constraint (NHC) enforces zero lateral and vertical velocities. To formulate the ODO/NHC observation equation, we define the vehicle frame, denoted as the $\mathrm{v}$-frame, with forward–right–down axes and its origin at the ground contact point of the odometer wheel. The ODO/NHC measurements in the $\mathrm{v}$-frame are given by $\tilde{\boldsymbol{v}}_{odo,nhc}^{\mathrm{v}} = \begin{bmatrix} v_{odo} & 0 & 0 \end{bmatrix}^T - \boldsymbol{n}_{odo,nhc}$, where $\boldsymbol{n}_{odo,nhc}$ is the measurement noise and $\boldsymbol{R}_{odo,nhc}$ is the corresponding covariance matrix.
+
+The INS-predicted velocity are the odometer wheel are expressed as:
+\begin{equation}
+    \label{eq:odo-nhc-velocity-predicted-by-ins-velocity}
+    \begin{aligned}
+        \boldsymbol{v}_{odo,nhc}^{\mathrm{v}} =& \mathbf{C}_{\mathrm{b}}^{\mathrm{v}} \mathbf{C}_{\mathrm{n}}^{\mathrm{b}} \left( \boldsymbol{v}_{I}^{\mathrm{n}} + \mathbf{C}_{\mathrm{b}}^{\mathrm{n}} \left(\boldsymbol{\omega}_{\mathrm{n} \mathrm{b}}^{\mathrm{b}} \times \right) \boldsymbol{\ell}_{odo}^{\mathrm{b}} \right) \\
+        \boldsymbol{v}_{odo,nhc}^{\mathrm{v}} =& \mathbf{C}_{\mathrm{b}}^{\mathrm{v}} \mathbf{C}_{\mathrm{n}}^{\mathrm{b}} \boldsymbol{v}_{I}^{\mathrm{n}} + \mathbf{C}_{\mathrm{b}}^{\mathrm{v}} \left(\boldsymbol{\omega}_{\mathrm{n} \mathrm{b}}^{\mathrm{b}} \times \right) \boldsymbol{\ell}_{odo}^{\mathrm{b}}
+    \end{aligned}
+\end{equation}
+where $\mathbf{C}_{\mathrm{b}}^{\mathrm{v}}$ is the rotation matrix between the body and vehicle frames, and $\boldsymbol{\ell}_{odo}^{\mathrm{b}}$ is the odometer lever arm in the body frame.
+
+Applying error perturbation to Eq.\eqref{eq:odo-nhc-velocity-predicted-by-ins-velocity}, the ODO/NHC measurement vector is:
+\begin{equation}
+    \begin{aligned}
+    \delta \boldsymbol{z}_{odo,nhc}^{\mathrm{v}} =& \hat{\boldsymbol{v}}_{odo,nhc}^{\mathrm{v}} - \tilde{\boldsymbol{v}}_{odo,nhc}^{\mathrm{v}} \\ 
+    \delta \boldsymbol{z}_{odo,nhc}^{\mathrm{v}} \approx &  \mathbf{C}_{\mathrm{b}}^{\mathrm{v}} \mathbf{C}_{\mathrm{n}}^{\mathrm{b}} \delta \boldsymbol{v}^{\mathrm{n}} - \mathbf{C}_{\mathrm{b}}^{\mathrm{v}} \mathbf{C}_{\mathrm{n}}^{\mathrm{b}} \left(\boldsymbol{v}^{\mathrm{n}} \times\right) \boldsymbol{\phi} - \mathbf{C}_{\mathrm{b}}^{\mathrm{v}} \left(\boldsymbol{\ell}_{odo}^{\mathrm{b}} \times \right) \mathbf{C}_{\mathrm{n}}^{\mathrm{b}} \left( \boldsymbol{\omega}_{\mathrm{in}}^{\mathrm{n}} \times \right) \boldsymbol{\phi} - \mathbf{C}_{\mathrm{b}}^{\mathrm{v}} \left(\boldsymbol{\ell}_{odo}^{\mathrm{b}} \times \right) \delta \boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}} + \boldsymbol{n}_{odo,nhc} \\
+    \delta \boldsymbol{z}_{odo,nhc}^{\mathrm{v}} =& \boldsymbol{H}_{odo,nhc} \delta \boldsymbol{x} + \boldsymbol{n}_{odo,nhc}
+    \end{aligned}
+\end{equation}
+where the error-state of $\boldsymbol{\omega}_{\mathrm{in}}^{\mathrm{n}}$ is also neglected, and the ODO/NHC measurement matrix $\boldsymbol{H}_{odo,nhc}$ is given by:
+\begin{equation}
+    \boldsymbol{H}_{odo,nhc} = \begin{bmatrix}
+        \boldsymbol{0}_3 & \mathbf{C}_{\mathrm{b}}^{\mathrm{v}} \mathbf{C}_{\mathrm{n}}^{\mathrm{b}} & \boldsymbol{H}_{odo,nhc,3} & -\mathbf{C}_{\mathrm{b}}^{\mathrm{v}} \left(\boldsymbol{\ell}_{odo}^{\mathrm{b}} \times \right) & \boldsymbol{0}_3 & -\mathbf{C}_{\mathrm{b}}^{\mathrm{v}} \left(\boldsymbol{\ell}_{odo}^{\mathrm{b}} \times \right) \operatorname{diag}(\boldsymbol{\omega}_{\mathrm{ib}}^{\mathrm{b}}) & \boldsymbol{0}_3
+    \end{bmatrix}
+\end{equation}
+where $\boldsymbol{H}_{odo,nhc,3} = - \mathbf{C}_{\mathrm{b}}^{\mathrm{v}} \mathbf{C}_{\mathrm{n}}^{\mathrm{b}} \left(\boldsymbol{v}^{\mathrm{n}} \times\right) - \mathbf{C}_{\mathrm{b}}^{\mathrm{v}} \left(\boldsymbol{\ell}_{odo}^{\mathrm{b}} \times \right) \mathbf{C}_{\mathrm{n}}^{\mathrm{b}} \left( \boldsymbol{\omega}_{\mathrm{in}}^{\mathrm{n}} \times \right)$.
+
+Finally, the ODO/NHC velocity measurement model is employed in Eq.\eqref{eq:kalman-update-equation} to update the system state vector and covariance matrix.
+
+\subsection{Error State Feedback}
+
+From the updated system error state vector $\delta \boldsymbol{x}_{k}$, the position error $\delta \boldsymbol{r}_{k}^{\mathrm{n}}$, velocity error $\delta \boldsymbol{v}_{k}^{\mathrm{n}}$, attitude error $\boldsymbol{\phi}_{k}$, IMU gyroscope bias error $\delta \boldsymbol{b}_{g,k}$, IMU accelerometer bias error $\delta \boldsymbol{b}_{a,k}$, IMU gyroscope scale factor error $\delta \boldsymbol{s}_{g,k}$, and IMU accelerometer scale factor error $\delta \boldsymbol{s}_{a,k}$ are extracted. The estimated error state is then fed back to the predicted navigation state $\hat{\boldsymbol{x}}$ as follows:
+\begin{equation}
+    \begin{aligned}
+        \boldsymbol{r}_{k}^{\mathrm{n}} =& \hat{\boldsymbol{r}}_{k}^{\mathrm{n}} - \delta \boldsymbol{r}_{k}^{\mathrm{n}}, \quad \boldsymbol{p}_{I} = \hat{\boldsymbol{p}}_{I} - \boldsymbol{D}_{R}^{-1} \delta \boldsymbol{r}_{k}^{\mathrm{n}} \\
+        \boldsymbol{v}_{k}^{\mathrm{n}} =& \hat{\boldsymbol{v}}_{k}^{\mathrm{n}} - \delta \boldsymbol{v}_{k}^{\mathrm{n}} \\
+        \mathbf{C}_{\mathrm{b},k}^{\mathrm{n}} =& \left[\boldsymbol{I}_{3} + \boldsymbol{\phi}_{k} \times \right] \hat{\mathbf{C}}_{\mathrm{b},k}^{\mathrm{n}} \\
+        \boldsymbol{b}_{g,k} = & \hat{\boldsymbol{b}}_{g,k} + \delta \boldsymbol{b}_{g,k} \\
+        \boldsymbol{b}_{a,k} = & \hat{\boldsymbol{b}}_{a,k} + \delta \boldsymbol{b}_{a,k} \\  
+        \boldsymbol{s}_{g,k} = & \hat{\boldsymbol{s}}_{g,k} + \delta \boldsymbol{s}_{g,k} \\
+        \boldsymbol{s}_{a,k} = & \hat{\boldsymbol{s}}_{a,k} + \delta \boldsymbol{s}_{a,k} \\
+    \end{aligned}
+\end{equation}
+
+After error state feedback, it is assumed that the estimated navigation state no longer contains errors, and the system error state is reset to zero: $\delta \boldsymbol{x}_{k}=\boldsymbol{0}$.
+
+\end{document}
