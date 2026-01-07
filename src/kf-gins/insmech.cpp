@@ -52,8 +52,8 @@ void INSMech::velUpdate(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const
         -pvapre.vel[1] * tan(pvapre.pos[0]) / (rmrn[1] + pvapre.pos[2]);
     double gravity = Earth::gravity(pvapre.pos);
 
-    // 旋转效应和双子样划桨效应
-    // rotational and sculling motion
+    // 旋转效应和双子样划桨效应(基于相同采样间隔推导)
+    // rotational and sculling motion (derived under uniform sampling)
     temp1 = imucur.dtheta.cross(imucur.dvel) / 2;
     temp2 = imupre.dtheta.cross(imucur.dvel) / 12;
     temp3 = imupre.dvel.cross(imucur.dtheta) / 12;
@@ -177,9 +177,9 @@ void INSMech::attUpdate(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const
     temp1 = -(wie_n + wen_n) * imucur.dt;
     qnn   = Rotation::rotvec2quaternion(temp1);
 
-    // 计算b系旋转四元数 补偿二阶圆锥误差
+    // 计算b系旋转四元数 补偿二阶圆锥误差(基于相同采样间隔推导)
     // b-frame rotation vector (b(k) with respect to b(k-1)-frame)
-    // compensate the second-order coning correction term.
+    // compensate the second-order coning correction term. (derived under uniform sampling)
     temp1 = imucur.dtheta + imupre.dtheta.cross(imucur.dtheta) / 12;
     qbb   = Rotation::rotvec2quaternion(temp1);
 

@@ -126,6 +126,8 @@ void GIEngine::newImuProcess() {
         // gnssdata is between the two imudata, we interpolate current imudata to gnss time
         IMU midimu;
         imuInterpolate(imupre_, imucur_, updatetime, midimu);
+        // NOTE：内插之后采样间隔会变化，严格上不满足INSMech的假设，但影响较小暂时忽略
+        // Interpolation changes sampling interval, slightly violating INSMech's assumption (negligible for now)
 
         // 对前一半IMU进行状态传播
         // propagate navigation state for the first half imudata
