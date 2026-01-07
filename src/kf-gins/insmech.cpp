@@ -148,7 +148,7 @@ void INSMech::posUpdate(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const
 
 void INSMech::attUpdate(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const IMU &imucur) {
 
-    Eigen::Quaterniond qne_pre, qne_cur, qne_mid, qnn, qbb;
+    Eigen::Quaterniond qne_pre, qne_cur, qne_mid, qnn, qee, qbb;
     Eigen::Vector3d temp1, midpos, midvel;
 
     // 重新计算中间时刻的速度和位置
@@ -156,8 +156,10 @@ void INSMech::attUpdate(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const
     midvel = (pvapre.vel + pvacur.vel) / 2;
     qne_pre   = Earth::qne(pvapre.pos);
     qne_cur   = Earth::qne(pvacur.pos);
-    temp1     = Rotation::quaternion2vector((qne_cur.inverse() * qne_pre).normalized());
-    qne_mid   = (qne_pre * Rotation::rotvec2quaternion(temp1 / 2).inverse()).normalized();
+    qee       = Rotation::rotvec2quaternion(Eigen::Vector3d(0, 0, -WGS84_WIE * imucur.dt));
+    temp1     = Rotation::quaternion2vector((qne_cur.inverse() * qee.inverse() * qne_pre).normalized());
+    qee       = Rotation::rotvec2quaternion(Eigen::Vector3d(0, 0, -WGS84_WIE * imucur.dt / 2));
+    qne_mid   = (qee * qne_pre * Rotation::rotvec2quaternion(temp1 / 2).inverse()).normalized();
     midpos[2] = (pvacur.pos[2] + pvapre.pos[2]) / 2;
     midpos    = Earth::blh(qne_mid, midpos[2]);
 

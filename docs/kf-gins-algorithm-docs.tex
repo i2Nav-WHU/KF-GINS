@@ -323,13 +323,13 @@ where, the second term on the right-hand side is the coning effect compensation.
 To compute the equivalent rotation vector for the $\mathrm{n}$ frame, the position and velocity at time $t_{k-1/2}$ are required. The velocity at $t_{k-1/2}$ can be obtained using equation \eqref{eq:position-height-update}, and the altitude at $t_{k-1/2}$ is interpolated as ${h}_{k-1/2} = ({h}_{k-1} + {h}_{k})/2$. The latitude and longitude at $t_{k-1/2}$ are interpolated using the position quaternion. First, the position quaternion at $t_{k-1/2}$ is computed as:
 \begin{equation}
     \begin{aligned}
-        \mathbf{q}_{\delta \boldsymbol{\theta}} =& \left(\mathbf{q}_{\mathrm{n}(k-1)}^{\mathrm{n}(k-1)}\right)^{-1} \otimes \mathbf{q}_{\mathrm{n}(k)}^{\mathrm{n}(k)} \\
-        \mathbf{q}_{\mathrm{n}(k-1/2)}^{\mathrm{n}(k-1/2)} =& \mathbf{q}_{\mathrm{n}(k-1)}^{\mathrm{n}(k-1)} \otimes \mathbf{q}_{0.5 \delta \boldsymbol{\theta}}
+        \mathbf{q}_{\delta \boldsymbol{\theta}} =& \left(\mathbf{q}_{\mathrm{n}(k-1)}^{\mathrm{e}(k-1)}\right)^{-1} \otimes \left(\mathbf{q}_{\mathrm{e}(k-1)}^{\mathrm{e}(k)}\right)^{-1} \otimes \mathbf{q}_{\mathrm{n}(k)}^{\mathrm{e}(k)} \\
+        \mathbf{q}_{\mathrm{n}(k-1/2)}^{\mathrm{e}(k-1/2)} =& \mathbf{q}_{\mathrm{e}(k-1)}^{\mathrm{e}(k-1/2)} \otimes \mathbf{q}_{\mathrm{n}(k-1)}^{\mathrm{e}(k-1)} \otimes \mathbf{q}_{0.5 \delta \boldsymbol{\theta}}
     \end{aligned} 
     \label{eq:position-quaternion-interpolation}
 \end{equation}
 
-Here, $\delta \boldsymbol{\theta}$ is the equivalent rotation vector corresponding to the position change from $t_{k-1}$ to $t_k$, and $0.5 \delta \boldsymbol{\theta}$ represents the interpolated rotation vector. Then $\mathbf{q}_{\mathrm{n}(k-1/2)}^{\mathrm{n}(k-1/2)}$ is converted into latitude and longitude at $t_{k-1/2}$.
+Here, $\delta \boldsymbol{\theta}$ is the equivalent rotation vector corresponding to the position change from $t_k$ to $t_{k-1}$, and $0.5 \delta \boldsymbol{\theta}$ represents the interpolated rotation vector. $\mathbf{q}_{0.5 \delta \boldsymbol{\theta}}$ is used as an approximation of the rotation from $t_{k-1/2}$ to $t_{k-1}$, i.e. $\mathbf{q}_{\mathrm{n}(k-1/2)}^{\mathrm{n}(k-1)}$. Then $\mathbf{q}_{\mathrm{n}(k-1/2)}^{\mathrm{e}(k-1/2)}$ is converted into latitude and longitude at $t_{k-1/2}$.
 
 \textbf{(3) Algorithm Implementation}
 
