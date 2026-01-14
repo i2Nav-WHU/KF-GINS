@@ -157,9 +157,9 @@ void INSMech::attUpdate(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const
     qne_pre   = Earth::qne(pvapre.pos);
     qne_cur   = Earth::qne(pvacur.pos);
     qee       = Rotation::rotvec2quaternion(Eigen::Vector3d(0, 0, -WGS84_WIE * imucur.dt));
-    temp1     = Rotation::quaternion2vector((qne_cur.inverse() * qee.inverse() * qne_pre).normalized());
+    temp1     = Rotation::quaternion2vector((qne_pre.inverse() * qee.inverse() * qne_cur).normalized());
     qee       = Rotation::rotvec2quaternion(Eigen::Vector3d(0, 0, -WGS84_WIE * imucur.dt / 2));
-    qne_mid   = (qee * qne_pre * Rotation::rotvec2quaternion(temp1 / 2).inverse()).normalized();
+    qne_mid   = (qee * qne_pre * Rotation::rotvec2quaternion(temp1 / 2)).normalized();
     midpos[2] = (pvacur.pos[2] + pvapre.pos[2]) / 2;
     midpos    = Earth::blh(qne_mid, midpos[2]);
 
