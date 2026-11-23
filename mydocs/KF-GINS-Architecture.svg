@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1040" viewBox="0 0 1440 1040" role="img" aria-labelledby="title desc">
+  <title id="title">KF-GINS 代码架构流程图</title>
+  <desc id="desc">展示配置和 IMU、GNSS 输入经过主程序、文件读取器、组合导航引擎、INS 机械编排和误差状态 EKF，最终输出导航结果、IMU 误差和状态标准差，并由 Python 脚本绘图。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#53657d"/>
+    </marker>
+    <style>
+      text { font-family: "Microsoft YaHei", "Noto Sans CJK SC", "PingFang SC", sans-serif; fill: #18283f; }
+      .title { font-size: 30px; font-weight: 700; }
+      .subtitle { font-size: 15px; fill: #53657d; }
+      .box-title { font-size: 19px; font-weight: 700; }
+      .box-sub { font-size: 14px; fill: #465a73; }
+      .group-title { font-size: 15px; font-weight: 700; fill: #53657d; letter-spacing: 1px; }
+      .arrow-label { font-size: 13px; fill: #53657d; }
+      .box { stroke-width: 2; rx: 14; }
+      .line { fill: none; stroke: #53657d; stroke-width: 2.4; marker-end: url(#arrow); }
+      .line-dashed { fill: none; stroke: #8493a7; stroke-width: 2; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1440" height="1040" fill="#f7f9fc"/>
+  <text class="title" x="720" y="55" text-anchor="middle">KF-GINS 代码架构与数据流</text>
+  <text class="subtitle" x="720" y="83" text-anchor="middle">离线 GNSS/INS 松组合：IMU 连续传播，GNSS 位置观测校正</text>
+
+  <!-- Input and configuration layer -->
+  <rect x="50" y="120" width="1340" height="175" rx="20" fill="#ffffff" stroke="#d6deea" stroke-width="2"/>
+  <text class="group-title" x="78" y="151">输入与配置</text>
+  <rect class="box" x="105" y="184" width="240" height="76" fill="#fff4d8" stroke="#e2b553"/>
+  <text class="box-title" x="225" y="216" text-anchor="middle">YAML 配置</text>
+  <text class="box-sub" x="225" y="240" text-anchor="middle">初值、噪声、路径、时间段、杆臂</text>
+
+  <rect class="box" x="490" y="184" width="240" height="76" fill="#e7f3ff" stroke="#6ca5d8"/>
+  <text class="box-title" x="610" y="216" text-anchor="middle">IMU 数据文件</text>
+  <text class="box-sub" x="610" y="240" text-anchor="middle">时间戳、角增量、速度增量</text>
+
+  <rect class="box" x="875" y="184" width="240" height="76" fill="#e7f3ff" stroke="#6ca5d8"/>
+  <text class="box-title" x="995" y="216" text-anchor="middle">GNSS 数据文件</text>
+  <text class="box-sub" x="995" y="240" text-anchor="middle">时间戳、位置、位置标准差</text>
+
+  <rect class="box" x="1180" y="184" width="170" height="76" fill="#f0eaff" stroke="#9878d0"/>
+  <text class="box-title" x="1265" y="216" text-anchor="middle">坐标 / 数学工具</text>
+  <text class="box-sub" x="1265" y="240" text-anchor="middle">Earth · Rotation</text>
+
+  <!-- Application orchestration -->
+  <rect x="50" y="325" width="1340" height="130" rx="20" fill="#ffffff" stroke="#d6deea" stroke-width="2"/>
+  <text class="group-title" x="78" y="356">应用与数据读取</text>
+  <rect class="box" x="120" y="376" width="340" height="58" fill="#e9e8ff" stroke="#8980d8"/>
+  <text class="box-title" x="290" y="402" text-anchor="middle">主程序 · src/kf_gins.cpp</text>
+  <text class="box-sub" x="290" y="423" text-anchor="middle">加载配置、对齐时间、驱动主循环、组织 I/O</text>
+
+  <rect class="box" x="590" y="376" width="270" height="58" fill="#e8f7f1" stroke="#62ad8a"/>
+  <text class="box-title" x="725" y="402" text-anchor="middle">ImuFileLoader</text>
+  <text class="box-sub" x="725" y="423" text-anchor="middle">文本行 → IMU 增量历元</text>
+
+  <rect class="box" x="960" y="376" width="270" height="58" fill="#e8f7f1" stroke="#62ad8a"/>
+  <text class="box-title" x="1095" y="402" text-anchor="middle">GnssFileLoader</text>
+  <text class="box-sub" x="1095" y="423" text-anchor="middle">文本行 → GNSS 位置观测</text>
+
+  <!-- Core processing area -->
+  <rect x="50" y="485" width="1340" height="365" rx="20" fill="#ffffff" stroke="#d6deea" stroke-width="2"/>
+  <text class="group-title" x="78" y="516">组合导航核心 · src/kf-gins/</text>
+
+  <rect class="box" x="105" y="565" width="270" height="90" fill="#e9e8ff" stroke="#8980d8"/>
+  <text class="box-title" x="240" y="601" text-anchor="middle">GIEngine</text>
+  <text class="box-sub" x="240" y="626" text-anchor="middle">历元管理 · GNSS/IMU 对时</text>
+  <text class="box-sub" x="240" y="646" text-anchor="middle">补偿 · 传播 / 更新调度</text>
+
+  <rect class="box" x="480" y="545" width="340" height="118" fill="#e5f5ed" stroke="#62ad8a"/>
+  <text class="box-title" x="650" y="581" text-anchor="middle">INSMech</text>
+  <text class="box-sub" x="650" y="607" text-anchor="middle">捷联惯导机械编排</text>
+  <text class="box-sub" x="650" y="631" text-anchor="middle">速度 → 位置 → 姿态</text>
+  <text class="box-sub" x="650" y="651" text-anchor="middle">双子样划桨 / 圆锥补偿</text>
+
+  <rect class="box" x="480" y="710" width="340" height="105" fill="#fff0e5" stroke="#df9460"/>
+  <text class="box-title" x="650" y="746" text-anchor="middle">误差状态 EKF · 21 维</text>
+  <text class="box-sub" x="650" y="772" text-anchor="middle">IMU 驱动预测 · 协方差传播</text>
+  <text class="box-sub" x="650" y="795" text-anchor="middle">GNSS 位置更新 · 误差反馈</text>
+
+  <rect class="box" x="930" y="565" width="360" height="105" fill="#f0eaff" stroke="#9878d0"/>
+  <text class="box-title" x="1110" y="601" text-anchor="middle">名义导航状态</text>
+  <text class="box-sub" x="1110" y="627" text-anchor="middle">位置、NED 速度、姿态、IMU 误差</text>
+  <text class="box-sub" x="1110" y="650" text-anchor="middle">PVA 由惯导传播并由误差反馈修正</text>
+
+  <rect class="box" x="930" y="710" width="360" height="105" fill="#fff4d8" stroke="#e2b553"/>
+  <text class="box-title" x="1110" y="746" text-anchor="middle">不确定度与误差估计</text>
+  <text class="box-sub" x="1110" y="772" text-anchor="middle">Cov：21×21 协方差</text>
+  <text class="box-sub" x="1110" y="795" text-anchor="middle">dx：位置、速度、姿态及 IMU 误差</text>
+
+  <!-- Output -->
+  <rect x="50" y="880" width="1340" height="130" rx="20" fill="#ffffff" stroke="#d6deea" stroke-width="2"/>
+  <text class="group-title" x="78" y="911">结果输出与后处理</text>
+  <rect class="box" x="160" y="930" width="210" height="55" fill="#e9e8ff" stroke="#8980d8"/>
+  <text class="box-title" x="265" y="964" text-anchor="middle">FileSaver</text>
+  <rect class="box" x="470" y="930" width="260" height="55" fill="#e7f3ff" stroke="#6ca5d8"/>
+  <text class="box-title" x="600" y="954" text-anchor="middle">导航结果 · .nav</text>
+  <text class="box-sub" x="600" y="975" text-anchor="middle">位置 / 速度 / 姿态</text>
+  <rect class="box" x="790" y="930" width="260" height="55" fill="#e7f3ff" stroke="#6ca5d8"/>
+  <text class="box-title" x="920" y="954" text-anchor="middle">IMU 误差 · .txt</text>
+  <text class="box-sub" x="920" y="975" text-anchor="middle">零偏 / 比例因子估计</text>
+  <rect class="box" x="1110" y="930" width="240" height="55" fill="#e7f3ff" stroke="#6ca5d8"/>
+  <text class="box-title" x="1230" y="954" text-anchor="middle">状态标准差 · .txt</text>
+  <text class="box-sub" x="1230" y="975" text-anchor="middle">由协方差对角线导出</text>
+
+  <!-- Arrows: config and source data -->
+  <path class="line" d="M225 260 L225 376"/><text class="arrow-label" x="238" y="320">参数</text>
+  <path class="line" d="M610 260 L610 376"/>
+  <path class="line" d="M995 260 L995 376"/>
+  <path class="line-dashed" d="M1265 260 L1265 545"/>
+  <text class="arrow-label" x="1278" y="460">地球与姿态计算</text>
+
+  <!-- Orchestration and core arrows -->
+  <path class="line" d="M460 405 L590 405"/><text class="arrow-label" x="480" y="394">读取</text>
+  <path class="line" d="M860 405 L960 405"/><text class="arrow-label" x="866" y="394">读取</text>
+  <path class="line" d="M725 434 L725 515 L240 515 L240 565"/>
+  <text class="arrow-label" x="430" y="505">IMU 历元</text>
+  <path class="line" d="M1095 434 L1095 530 L375 530 L375 590"/>
+  <text class="arrow-label" x="790" y="522">GNSS 位置观测</text>
+  <path class="line" d="M375 595 L480 595"/><text class="arrow-label" x="390" y="584">传播调度</text>
+  <path class="line" d="M650 663 L650 710"/><text class="arrow-label" x="663" y="692">状态转移 F、噪声 G</text>
+  <path class="line" d="M820 762 L930 762"/><text class="arrow-label" x="830" y="750">dx / Cov</text>
+  <path class="line" d="M930 605 L820 605"/><text class="arrow-label" x="831" y="594">名义 PVA</text>
+  <path class="line-dashed" d="M930 790 L820 650"/><text class="arrow-label" x="836" y="700">反馈修正</text>
+
+  <!-- Core to output and plotting -->
+  <path class="line" d="M1110 670 L1110 865 L265 865 L265 930"/>
+  <text class="arrow-label" x="700" y="854">当前 IMU 历元状态与协方差</text>
+  <path class="line" d="M370 957 L470 957"/>
+  <path class="line" d="M370 957 L790 957"/>
+  <path class="line" d="M370 957 L1110 957"/>
+  <path class="line-dashed" d="M600 985 L600 1024 L920 1024"/>
+  <path class="line-dashed" d="M920 985 L920 1024"/>
+  <path class="line-dashed" d="M1230 985 L1230 1024 L920 1024"/>
+  <text class="arrow-label" x="920" y="1038" text-anchor="middle">plot_navresult.py：轨迹绘图与参考真值误差分析（独立后处理）</text>
+</svg>

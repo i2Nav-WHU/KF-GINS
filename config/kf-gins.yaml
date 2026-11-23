@@ -72,13 +72,13 @@ initattstd: [ 0.5, 0.5, 1.0 ]
 # IMU噪声建模参数, IMU的三个轴
 # IMU noise parameters
 imunoise:
-  arw: [0.24, 0.24, 0.24]          # [deg/sqrt(hr)]
-  vrw: [0.24, 0.24, 0.24]          # [m/s/sqrt(hr)]
-  gbstd: [50.0, 50.0, 50.0]        # [deg/hr]
-  abstd: [250.0, 250.0, 250.0]     # [mGal]
-  gsstd: [1000.0, 1000.0, 1000.0]  # [ppm]
-  asstd: [1000.0, 1000.0, 1000.0]  # [ppm]
-  corrtime: 1.0                    # [hr]
+  arw: [0.24, 0.24, 0.24]          # [deg/sqrt(hr)]  //陀螺角随机游走（Angle Random Walk），描述陀螺白噪声
+  vrw: [0.24, 0.24, 0.24]          # [m/s/sqrt(hr)] //加速度计速度随机游走（Velocity Random Walk），描述加速度计白噪声
+  gbstd: [50.0, 50.0, 50.0]        # [deg/hr]       //陀螺零偏的稳态标准差
+  abstd: [250.0, 250.0, 250.0]     # [mGal]         //加速度计零偏的稳态标准差	每轴 250 mGal，即 0.0025 m/s²
+  gsstd: [1000.0, 1000.0, 1000.0]  # [ppm]          //陀螺比例因子误差的稳态标准差
+  asstd: [1000.0, 1000.0, 1000.0]  # [ppm]          //加速度计比例因子误差的稳态标准差
+  corrtime: 1.0                    # [hr]           //零偏和比例因子误差采用的一阶 Gauss–Markov 模型的相关时间
 
 # 天线杆臂, IMU坐标系前右下方向
 # antenna lever, forward, right and down in the imu frame. [m]

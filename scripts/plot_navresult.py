@@ -307,7 +307,7 @@ if __name__ == '__main__':
     # 导航结果
     plotNavresult(navresult_filepath)
     # 计算并绘制导航误差
-    # plotNavError(navresult_filepath, refresult_filepath)
+    plotNavError(navresult_filepath, refresult_filepath)
 
     # 估计的IMU误差
     imuerr_filepath = '../dataset/KF_GINS_IMU_ERR.txt'

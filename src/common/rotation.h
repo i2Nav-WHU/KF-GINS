@@ -72,6 +72,7 @@ public:
         return matrix2euler(quaternion.toRotationMatrix());
     }
 
+    //将旋转向量转换为表示同一旋转的四元数。
     static Quaterniond rotvec2quaternion(const Vector3d &rotvec) {
         double angle = rotvec.norm();
         Vector3d vec = rotvec.normalized();
@@ -96,6 +97,7 @@ public:
                            Eigen::AngleAxisd(euler[0], Vector3d::UnitX()));
     }
 
+    // 向量转为反对称矩阵
     static Matrix3d skewSymmetric(const Vector3d &vector) {
         Matrix3d mat;
         mat << 0, -vector(2), vector(1), vector(2), 0, -vector(0), -vector(1), vector(0), 0;

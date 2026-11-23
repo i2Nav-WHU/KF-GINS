@@ -5,15 +5,31 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Windows 启动",
-            "type": "cppvsdbg",
+            "name": "Windows MinGW 启动",
+            "type": "cppdbg",
             "request": "launch",
             "cwd": "${workspaceFolder}",
-            "program": "${workspaceFolder}/bin/KF-GINS",
-            "args": ["./dataset/kf-gins.yaml"],
-            "stopAtEntry": true,
+            "program": "${workspaceFolder}/bin/KF-GINS.exe",
+            "args": [
+                "./dataset/kf-gins.yaml"
+            ],
+            "stopAtEntry": false,
             "environment": [],
-            "console": "integratedTerminal"
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "D:/mingw64/bin/gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "启用 GDB pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Register Eigen 3.3.9 printers",
+                    "text": "python import sys; sys.path.insert(0, 'D:/gdb-printers/eigen/debug/gdb'); from printers import register_eigen_printers; register_eigen_printers(None)",
+                    "ignoreFailures": false
+                }
+            ]
         },
         {
             "name": "Linux gdb 启动",
